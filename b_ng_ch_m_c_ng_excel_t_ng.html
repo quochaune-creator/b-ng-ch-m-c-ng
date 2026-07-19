@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Chấm Công Tự Động & Xuất Excel</title>
+    <!-- Tailwind CSS for modern responsive styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for beautiful dashboard icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for powerful Excel export capability -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for timesheet table */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Frozen column shadow effect */
+        .sticky-col-shadow::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md py-4 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-2 rounded-lg text-emerald-600 shadow">
+                    <i class="fa-solid fa-file-excel text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Hệ Thống Chấm Công Thông Minh</h1>
+                    <p class="text-xs text-emerald-100">Tự động hóa bảng tính - Xuất Excel nguyên bản giữ nguyên công thức</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Month & Year Selector -->
+                <div class="bg-emerald-800/50 backdrop-blur-sm border border-emerald-500/30 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                    <label for="monthSelect" class="text-xs font-semibold text-emerald-200">THÁNG:</label>
+                    <select id="monthSelect" class="bg-transparent text-white text-sm font-bold focus:outline-none cursor-pointer">
+                        <!-- Javascript will generate months -->
+                    </select>
+                    <span class="text-emerald-400">|</span>
+                    <label for="yearSelect" class="text-xs font-semibold text-emerald-200">NĂM:</label>
+                    <select id="yearSelect" class="bg-transparent text-white text-sm font-bold focus:outline-none cursor-pointer">
+                        <!-- Javascript will generate years -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-[98%] mx-auto w-full py-6 px-2 sm:px-4">
+        <!-- Dashboard Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Tổng số nhân sự</p>
+                    <h3 id="statTotalStaff" class="text-2xl font-bold text-slate-800 mt-1">20</h3>
+                    <span class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-users mr-1"></i> Định mức tiêu chuẩn</span>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-lg text-indigo-600">
+                    <i class="fa-solid fa-user-tie text-xl"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Tổng số ngày công đã chấm</p>
+                    <h3 id="statTotalWorkdays" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    <span class="text-xs text-slate-500">Tất cả nhân sự gộp lại</span>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-lg text-emerald-600">
+                    <i class="fa-solid fa-calendar-check text-xl"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Tỷ lệ chuyên cần bình quân</p>
+                    <h3 id="statAttendanceRate" class="text-2xl font-bold text-slate-800 mt-1">0%</h3>
+                    <span class="text-xs text-slate-400">Dựa trên ngày thực tế đi làm</span>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-lg text-amber-600">
+                    <i class="fa-solid fa-chart-simple text-xl"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 uppercase font-semibold">Tỷ lệ nghỉ/vắng</p>
+                    <h3 id="statAbsentRate" class="text-2xl font-bold text-slate-800 mt-1">0%</h3>
+                    <span class="text-xs text-slate-400">Tự động tính từ phép/vắng</span>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-lg text-rose-600">
+                    <i class="fa-solid fa-user-slash text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Toolbar -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Chấm công nhanh:</span>
+                <button onclick="bulkFill('weekdays')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border border-emerald-200 flex items-center gap-1">
+                    <i class="fa-solid fa-calendar-days"></i> Chỉ tick ngày thường (T2-T6)
+                </button>
+                <button onclick="bulkFill('all')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border border-slate-300 flex items-center gap-1">
+                    <i class="fa-solid fa-check-double"></i> Tick Đi làm cả tháng (X)
+                </button>
+                <button onclick="bulkFill('clear')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border border-rose-200 flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Xóa sạch bảng công
+                </button>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                <button onclick="addNewStaff()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all shadow-md hover:shadow-indigo-200 flex items-center gap-2 w-full sm:w-auto justify-center">
+                    <i class="fa-solid fa-plus"></i> Thêm nhân sự mới
+                </button>
+                <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all shadow-md hover:shadow-emerald-200 flex items-center gap-2 w-full sm:w-auto justify-center">
+                    <i class="fa-solid fa-file-excel"></i> Xuất Excel Công Thức (.xlsx)
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend and Info -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-3 bg-slate-100 p-2.5 rounded-lg text-xs text-slate-600">
+            <div class="flex flex-wrap items-center gap-4">
+                <span class="font-bold text-slate-700"><i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> Hướng dẫn click:</span>
+                <span class="flex items-center gap-1"><span class="w-5 h-5 bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold rounded">X</span> Đi làm (1.0 công)</span>
+                <span class="flex items-center gap-1"><span class="w-5 h-5 bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold rounded">½</span> Nửa ngày (0.5 công)</span>
+                <span class="flex items-center gap-1"><span class="w-5 h-5 bg-sky-500 text-white flex items-center justify-center text-[10px] font-bold rounded">P</span> Nghỉ phép có lương (1.0 công)</span>
+                <span class="flex items-center gap-1"><span class="w-5 h-5 bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold rounded">V</span> Vắng không lương (0.0 công)</span>
+                <span class="flex items-center gap-1"><span class="w-5 h-5 border border-slate-300 bg-white text-slate-400 flex items-center justify-center text-[10px] font-bold rounded">-</span> Trống / Chưa chấm (0.0 công)</span>
+            </div>
+            <div class="italic text-emerald-700 font-medium">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Click trực tiếp vào ô ngày để xoay vòng trạng thái! Double click tên/bộ phận để đổi tên.
+            </div>
+        </div>
+
+        <!-- Timesheet Interactive Spreadsheet -->
+        <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
+            <div class="custom-scrollbar overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse table-fixed min-w-[1200px]" id="attendanceTable">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-slate-200">
+                            <!-- STT -->
+                            <th class="w-12 text-center text-xs font-bold text-slate-600 py-3 px-1 sticky left-0 bg-slate-100 z-10">STT</th>
+                            
+                            <!-- Họ tên (Sticky) -->
+                            <th class="w-56 text-left text-xs font-bold text-slate-600 py-3 px-3 sticky left-12 bg-slate-100 z-10 border-r border-slate-200 sticky-col-shadow">HỌ VÀ TÊN</th>
+                            
+                            <!-- Bộ phận -->
+                            <th class="w-40 text-left text-xs font-bold text-slate-600 py-3 px-3 border-r border-slate-200 bg-slate-50">BỘ PHẬN</th>
+                            
+                            <!-- Day Columns (1-31) -->
+                            <!-- Dynamically generated days -->
+                            <th colspan="31" class="text-center text-[10px] font-bold text-slate-500 tracking-wider bg-slate-50 border-b border-slate-100">CÁC NGÀY CHẤM CÔNG TRONG THÁNG</th>
+                            
+                            <!-- Tổng công -->
+                            <th class="w-24 text-center text-xs font-bold text-emerald-700 py-3 px-2 bg-emerald-50 border-l border-slate-200 sticky right-0 z-10">TỔNG CÔNG</th>
+                        </tr>
+                        <!-- Days of month numbers & Day of week letters -->
+                        <tr class="bg-slate-50 border-b border-slate-200" id="daysSubHeader">
+                            <!-- Left placeholders for sticky items -->
+                            <th class="sticky left-0 bg-slate-50 z-10 border-r border-slate-100"></th>
+                            <th class="sticky left-12 bg-slate-50 z-10 border-r border-slate-200 sticky-col-shadow"></th>
+                            <th class="border-r border-slate-200 bg-slate-50"></th>
+                            
+                            <!-- Generated by JS (Day number 1 to 31 & Day name e.g. T2, T3) -->
+                            <!-- ... -->
+                            <th class="sticky right-0 bg-emerald-50 z-10 border-l border-slate-200"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Personnel Rows generated by JavaScript (20 initial rows) -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Custom Notification Toast -->
+        <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+            <span id="toastIcon" class="text-emerald-400 text-lg"><i class="fa-solid fa-check-circle"></i></span>
+            <p id="toastMessage" class="text-sm font-medium"></p>
+        </div>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 py-4 text-center text-xs border-t border-slate-700 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>&copy; 2026 Bảng Chấm Công Thông Minh. Hoạt động trên mọi thiết bị và trình duyệt.</p>
+            <p class="flex items-center gap-2">
+                <span class="px-2 py-0.5 bg-emerald-900 text-emerald-300 rounded font-bold">XLSX Export Active v1.2</span>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // State variables
+        let employees = [];
+        const defaultDepartments = ["Hành chính", "Nhân sự", "Kinh doanh", "Kỹ thuật", "Marketing", "Kế toán", "Sản xuất"];
+        const sampleNames = [
+            "Nguyễn Văn An", "Trần Thị Bình", "Lê Hoàng Chí", "Phạm Minh Duy", "Vũ Thu Em",
+            "Đặng Quốc Huy", "Ngô Ngọc Hương", "Bùi Thế Kiệt", "Dương Hoài Linh", "Phan Thanh Mai",
+            "Võ Thành Nam", "Đỗ Quỳnh Như", "Nguyễn Tuấn Phong", "Trần Việt Quân", "Lê Văn Sơn",
+            "Phạm Trúc Thảo", "Vũ Xuân Tiến", "Đặng Diễm Uyên", "Ngô Văn Vy", "Hoàng Trọng Xuân"
+        ];
+
+        // Currently selected date parameters
+        let currentYear = 2026;
+        let currentMonth = 6; // July (0-indexed 6 is July)
+
+        // Attendance cycle mapping
+        // Empty/Dash -> 'X' (1.0) -> '½' (0.5) -> 'P' (1.0) -> 'V' (0.0) -> Empty
+        const STATES = {
+            '': { text: '', class: 'bg-white text-transparent hover:bg-slate-100', value: 0 },
+            'X': { text: 'X', class: 'bg-emerald-500 text-white font-bold', value: 1.0 },
+            '½': { text: '½', class: 'bg-amber-500 text-white font-bold', value: 0.5 },
+            'P': { text: 'P', class: 'bg-sky-500 text-white font-bold', value: 1.0 },
+            'V': { text: 'V', class: 'bg-rose-500 text-white font-bold', value: 0.0 }
+        };
+
+        const STATE_SEQUENCE = ['', 'X', '½', 'P', 'V'];
+
+        window.onload = function() {
+            initDateSelectors();
+            generateInitialStaff();
+            renderCalendarHeader();
+            renderTableBody();
+            calculateStatistics();
+        }
+
+        // Setup Month & Year drop downs
+        function initDateSelectors() {
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+
+            // Generate Months
+            for(let m = 0; m < 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = `Tháng ${m + 1}`;
+                if(m === currentMonth) opt.selected = true;
+                monthSelect.appendChild(opt);
+            }
+
+            // Generate Years
+            for(let y = 2024; y <= 2030; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if(y === currentYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            // Event Listeners
+            monthSelect.addEventListener('change', (e) => {
+                currentMonth = parseInt(e.target.value);
+                updateCalendar();
+            });
+            yearSelect.addEventListener('change', (e) => {
+                currentYear = parseInt(e.target.value);
+                updateCalendar();
+            });
+        }
+
+        // Generate 20 default staff rows
+        function generateInitialStaff() {
+            employees = [];
+            for(let i = 0; i < 20; i++) {
+                employees.push({
+                    id: 'EMP_' + (i + 1).toString().padStart(3, '0'),
+                    stt: i + 1,
+                    name: sampleNames[i] || `Nhân sự mới ${i + 1}`,
+                    department: defaultDepartments[i % defaultDepartments.length],
+                    attendance: Array(31).fill('') // Initialize empty days
+                });
+            }
+        }
+
+        // Refresh entire table view on month/year change
+        function updateCalendar() {
+            renderCalendarHeader();
+            // Reset attendance state array sizes for each employee if days count changed
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            employees.forEach(emp => {
+                if (emp.attendance.length !== daysInMonth) {
+                    const newAttendance = Array(daysInMonth).fill('');
+                    // copy existing states
+                    for(let d = 0; d < Math.min(emp.attendance.length, daysInMonth); d++) {
+                        newAttendance[d] = emp.attendance[d];
+                    }
+                    emp.attendance = newAttendance;
+                }
+            });
+            renderTableBody();
+            calculateStatistics();
+            showToast(`Đã chuyển sang tháng ${currentMonth+1}/${currentYear}!`, 'fa-solid fa-calendar-days');
+        }
+
+        // Return number of days in chosen month/year
+        function getDaysInMonth(year, month) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        // Get weekday string representation
+        function getDayOfWeekStr(year, month, day) {
+            const dayOfWeek = new Date(year, month, day).getDay();
+            const daysMap = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            return {
+                name: daysMap[dayOfWeek],
+                isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+                dayIndex: dayOfWeek
+            };
+        }
+
+        // Build the dynamic columns for 1 to 28/29/30/31 days
+        function renderCalendarHeader() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            const subHeader = document.getElementById('daysSubHeader');
+            
+            // Clean up old dynamic columns (skip the first 3 sticky, and final 1 sticky)
+            subHeader.innerHTML = `
+                <th class="sticky left-0 bg-slate-100 z-10 border-r border-slate-200"></th>
+                <th class="sticky left-12 bg-slate-100 z-10 border-r border-slate-200 sticky-col-shadow"></th>
+                <th class="border-r border-slate-200 bg-slate-50"></th>
+            `;
+
+            // Insert dynamically generated date columns
+            for(let d = 1; d <= daysInMonth; d++) {
+                const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d);
+                const th = document.createElement('th');
+                
+                // Color codes for weekends vs weekdays
+                let bgClass = 'bg-white';
+                let textClass = 'text-slate-600';
+                if(dayInfo.isWeekend) {
+                    bgClass = dayInfo.name === 'CN' ? 'bg-rose-50' : 'bg-amber-50/70';
+                    textClass = dayInfo.name === 'CN' ? 'text-rose-600 font-bold' : 'text-amber-600 font-bold';
+                }
+
+                th.className = `w-10 border-r border-slate-200 text-center py-2 cursor-default ${bgClass}`;
+                th.innerHTML = `
+                    <div class="text-[11px] ${textClass}">${dayInfo.name}</div>
+                    <div class="text-[12px] font-bold text-slate-800 mt-0.5">${d.toString().padStart(2, '0')}</div>
+                `;
+                subHeader.appendChild(th);
+            }
+
+            // Append final sticky column for sum total header
+            const thTotal = document.createElement('th');
+            thTotal.className = "w-24 text-center text-[11px] font-bold text-emerald-800 bg-emerald-50 border-l border-slate-200 sticky right-0 z-10 py-2";
+            thTotal.innerHTML = "<div>Tổng</div><div>Ngày Công</div>";
+            subHeader.appendChild(thTotal);
+        }
+
+        // Render 20 Employee rows and support interactions
+        function renderTableBody() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            const tbody = document.getElementById('attendanceBody');
+            tbody.innerHTML = '';
+
+            employees.forEach((emp, empIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors duration-150";
+
+                // 1. STT column (sticky)
+                const tdSTT = document.createElement('td');
+                tdSTT.className = "sticky left-0 bg-white hover:bg-slate-50 text-center py-2.5 text-xs text-slate-500 font-medium border-r border-slate-100 z-10";
+                tdSTT.textContent = emp.stt;
+                tr.appendChild(tdSTT);
+
+                // 2. Họ Tên column (sticky, editable)
+                const tdName = document.createElement('td');
+                tdName.className = "sticky left-12 bg-white hover:bg-slate-50 font-semibold text-slate-800 border-r border-slate-200 px-3 z-10 sticky-col-shadow";
+                tdName.innerHTML = `
+                    <div class="flex items-center justify-between group">
+                        <input type="text" value="${emp.name}" onchange="updateEmployeeName(${empIdx}, this.value)" 
+                            class="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded px-1 py-0.5 cursor-pointer focus:bg-white text-xs md:text-sm">
+                        <i class="fa-solid fa-pen text-[10px] text-slate-300 group-hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    </div>
+                `;
+                tr.appendChild(tdName);
+
+                // 3. Bộ phận column (editable)
+                const tdDept = document.createElement('td');
+                tdDept.className = "px-3 border-r border-slate-200 text-xs text-slate-600";
+                tdDept.innerHTML = `
+                    <div class="flex items-center justify-between group">
+                        <input type="text" value="${emp.department}" onchange="updateEmployeeDept(${empIdx}, this.value)" 
+                            class="w-full bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-indigo-300 rounded px-1 py-0.5 cursor-pointer focus:bg-white">
+                        <i class="fa-solid fa-pen text-[10px] text-slate-300 group-hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    </div>
+                `;
+                tr.appendChild(tdDept);
+
+                // 4. Generate cells for days in month
+                let sumWorkdays = 0;
+                for(let d = 0; d < daysInMonth; d++) {
+                    const cellVal = emp.attendance[d] || '';
+                    const stateObj = STATES[cellVal] || STATES[''];
+                    sumWorkdays += stateObj.value;
+
+                    const tdCell = document.createElement('td');
+                    const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d + 1);
+                    
+                    // Style base for weekend coloring if unoccupied
+                    let cellBg = "bg-white";
+                    if(dayInfo.isWeekend && !cellVal) {
+                        cellBg = dayInfo.name === 'CN' ? 'bg-rose-50/50' : 'bg-amber-50/40';
+                    }
+
+                    tdCell.className = `border-r border-slate-200 p-0 text-center align-middle cursor-pointer select-none transition-all ${cellBg}`;
+                    tdCell.onclick = () => toggleCellState(empIdx, d);
+
+                    // Tiny box wrapper
+                    const cellEl = document.createElement('div');
+                    cellEl.className = `mx-auto w-7 h-7 flex items-center justify-center text-xs rounded transition-all duration-100 ${stateObj.class}`;
+                    cellEl.textContent = stateObj.text || '-';
+                    
+                    tdCell.appendChild(cellEl);
+                    tr.appendChild(tdCell);
+                }
+
+                // 5. Total days calculation (sticky column)
+                const tdTotal = document.createElement('td');
+                tdTotal.className = "sticky right-0 bg-emerald-50 text-center font-bold text-emerald-800 border-l border-slate-200 text-sm py-2.5 z-10";
+                tdTotal.id = `total_emp_${empIdx}`;
+                tdTotal.textContent = sumWorkdays % 1 === 0 ? sumWorkdays : sumWorkdays.toFixed(1);
+                tr.appendChild(tdTotal);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Toggle state sequence onClick
+        function toggleCellState(empIdx, dayIdx) {
+            const currentVal = employees[empIdx].attendance[dayIdx] || '';
+            const currSeqIdx = STATE_SEQUENCE.indexOf(currentVal);
+            const nextSeqIdx = (currSeqIdx + 1) % STATE_SEQUENCE.length;
+            const nextVal = STATE_SEQUENCE[nextSeqIdx];
+            
+            employees[empIdx].attendance[dayIdx] = nextVal;
+            
+            // Re-render specific row and calculation to save performance
+            updateEmployeeRowTotal(empIdx);
+            calculateStatistics();
+        }
+
+        // Fast state modifier
+        function updateEmployeeRowTotal(empIdx) {
+            const emp = employees[empIdx];
+            let sumWorkdays = 0;
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+            for(let d = 0; d < daysInMonth; d++) {
+                const cellVal = emp.attendance[d] || '';
+                sumWorkdays += STATES[cellVal].value;
+            }
+
+            // Update row total cell
+            const tdTotal = document.getElementById(`total_emp_${empIdx}`);
+            if (tdTotal) {
+                tdTotal.textContent = sumWorkdays % 1 === 0 ? sumWorkdays : sumWorkdays.toFixed(1);
+            }
+
+            // Update cell rendering in DOM directly to retain smooth responsiveness
+            renderTableBody(); 
+        }
+
+        // Inline input binders
+        function updateEmployeeName(empIdx, value) {
+            if (value.trim() !== '') {
+                employees[empIdx].name = value.trim();
+            } else {
+                renderTableBody(); // Reset to current state
+            }
+        }
+
+        function updateEmployeeDept(empIdx, value) {
+            if (value.trim() !== '') {
+                employees[empIdx].department = value.trim();
+            } else {
+                renderTableBody(); // Reset
+            }
+        }
+
+        // Recalculate dashboard statistic cards
+        function calculateStatistics() {
+            let totalTickedWorkdays = 0;
+            let totalPossibilities = 0;
+            let totalAbsents = 0;
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+            employees.forEach(emp => {
+                for(let d = 0; d < daysInMonth; d++) {
+                    const val = emp.attendance[d] || '';
+                    totalPossibilities += 1.0;
+                    
+                    if (val === 'X') totalTickedWorkdays += 1.0;
+                    else if (val === '½') totalTickedWorkdays += 0.5;
+                    else if (val === 'P') totalTickedWorkdays += 1.0; // Paid holiday
+                    else if (val === 'V') totalAbsents += 1.0;
+                }
+            });
+
+            document.getElementById('statTotalStaff').textContent = employees.length;
+            document.getElementById('statTotalWorkdays').textContent = totalTickedWorkdays.toFixed(1).replace('.0', '');
+
+            if(totalPossibilities > 0) {
+                const attRate = (totalTickedWorkdays / totalPossibilities) * 100;
+                const absRate = (totalAbsents / totalPossibilities) * 100;
+                document.getElementById('statAttendanceRate').textContent = attRate.toFixed(1) + '%';
+                document.getElementById('statAbsentRate').textContent = absRate.toFixed(1) + '%';
+            } else {
+                document.getElementById('statAttendanceRate').textContent = '0%';
+                document.getElementById('statAbsentRate').textContent = '0%';
+            }
+        }
+
+        // Add a brand new staff dynamically
+        function addNewStaff() {
+            const currentDays = getDaysInMonth(currentYear, currentMonth);
+            const newId = employees.length + 1;
+            employees.push({
+                id: 'EMP_' + newId.toString().padStart(3, '0'),
+                stt: newId,
+                name: `Nhân sự mới ${newId}`,
+                department: defaultDepartments[Math.floor(Math.random() * defaultDepartments.length)],
+                attendance: Array(currentDays).fill('')
+            });
+            renderTableBody();
+            calculateStatistics();
+            showToast('Đã thêm một nhân sự mới vào cuối danh sách!', 'fa-solid fa-user-plus');
+        }
+
+        // Bulk action handler
+        function bulkFill(type) {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            
+            employees.forEach(emp => {
+                for(let d = 0; d < daysInMonth; d++) {
+                    const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d + 1);
+                    if (type === 'weekdays') {
+                        // Tick X only for Mon-Fri
+                        if (!dayInfo.isWeekend) {
+                            emp.attendance[d] = 'X';
+                        } else {
+                            emp.attendance[d] = '';
+                        }
+                    } else if (type === 'all') {
+                        emp.attendance[d] = 'X';
+                    } else if (type === 'clear') {
+                        emp.attendance[d] = '';
+                    }
+                }
+            });
+
+            renderTableBody();
+            calculateStatistics();
+
+            if(type === 'weekdays') {
+                showToast('Chấm công siêu tốc: Đã tick ĐI LÀM cho toàn bộ ngày thường!', 'fa-solid fa-magic-wand-sparkles');
+            } else if(type === 'all') {
+                showToast('Đã đánh dấu có mặt cho tất cả các ngày!', 'fa-solid fa-check-double');
+            } else if(type === 'clear') {
+                showToast('Đã dọn dẹp sạch sẽ toàn bộ dữ liệu chấm công!', 'fa-solid fa-trash-arrow-up');
+            }
+        }
+
+        // Toast notification emitter
+        function showToast(message, iconClass = 'fa-solid fa-check') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            toastIcon.innerHTML = `<i class="${iconClass}"></i>`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // Advanced SheetJS Excel writer
+        function exportExcel() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            
+            // 1. Create a structured table array for workbook
+            const data = [];
+            
+            // Add Title block to spreadsheet
+            data.push([`BẢNG CHẤM CÔNG THÁNG ${currentMonth + 1} NĂM ${currentYear}`]);
+            data.push(["Khởi tạo tự động từ Hệ Thống Chấm Công Thông Minh"]);
+            data.push([]); // spacing row
+            
+            // Define Header
+            const headers = ["STT", "HỌ VÀ TÊN", "BỘ PHẬN"];
+            // Add numbers 1 to 31
+            for (let d = 1; d <= daysInMonth; d++) {
+                headers.push(`Ngày ${d}`);
+            }
+            headers.push("TỔNG CÔNG");
+            data.push(headers);
+
+            // Add Employee rows
+            employees.forEach((emp, index) => {
+                const row = [emp.stt, emp.name, emp.department];
+                
+                for (let d = 0; d < daysInMonth; d++) {
+                    row.push(emp.attendance[d] || '');
+                }
+                
+                // CRITICAL EXCEL AUTOMATION: Write a live dynamic formula into Excel cell!
+                // Map the Excel letter coordinates. 
+                // STT=A, Họ tên=B, Bộ phận=C, Ngày 1=D, Ngày 2=E...
+                // End date cell mapping: D is 4th col (index 3). Col index of last day = 3 + (daysInMonth - 1).
+                // E.g. for 31 days, col is 3 + 30 = 33 => letter format is 'AH' (index 33).
+                const startCellColLetter = 'D';
+                const endCellColLetter = getExcelColumnName(3 + daysInMonth - 1);
+                const excelRowNum = index + 5; // Header starts around row 4, so data starts at row 5 in 1-based indexing
+                
+                // Write multiple countif formulas inside the cell to support:
+                // Full day 'X' (counts 1) + Paid holiday 'P' (counts 1) + half day '½' (counts 0.5)
+                const formulaStr = `=COUNTIF(${startCellColLetter}${excelRowNum}:${endCellColLetter}${excelRowNum}, "X") + COUNTIF(${startCellColLetter}${excelRowNum}:${endCellColLetter}${excelRowNum}, "P") + (COUNTIF(${startCellColLetter}${excelRowNum}:${endCellColLetter}${excelRowNum}, "½") * 0.5)`;
+                
+                // Store formula spec
+                row.push({ t: 'n', f: formulaStr }); 
+                data.push(row);
+            });
+
+            // Add instruction/summary guidelines block at footer
+            data.push([]);
+            data.push(["", "CHÚ THÍCH KÝ HIỆU CHẤM CÔNG:"]);
+            data.push(["", "X: Đi làm (1.0 công)"]);
+            data.push(["", "½: Nửa công (0.5 công)"]);
+            data.push(["", "P: Nghỉ phép hưởng lương (1.0 công)"]);
+            data.push(["", "V: Vắng không lương (0.0 công)"]);
+
+            // 2. Build Worksheet
+            const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+            // 3. Set custom column widths to make it beautiful
+            const colsWidth = [
+                { wch: 6 }, // STT
+                { wch: 26 }, // Họ tên
+                { wch: 18 } // Bộ phận
+            ];
+            for (let d = 0; d < daysInMonth; d++) {
+                colsWidth.push({ wch: 6 }); // individual day columns
+            }
+            colsWidth.push({ wch: 15 }); // Tổng công column
+            worksheet['!cols'] = colsWidth;
+
+            // Merge titles layout
+            worksheet['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth + 3 } }, // Merge title across table width
+                { s: { r: 1, c: 0 }, e: { r: 1, c: daysInMonth + 3 } }  // Merge subtitle
+            ];
+
+            // 4. Create Workbook and Export
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, `Cham_Cong_Thang_${currentMonth + 1}`);
+
+            // Download file
+            const fileName = `Bang_Cham_Cong_Thang_${currentMonth + 1}_Nam_${currentYear}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showToast(`Xuất file Excel thành công! Tải về: ${fileName}`, 'fa-solid fa-circle-check');
+        }
+
+        // Helper to convert index 0 -> 'A', 27 -> 'AB' for Excel cell formatting
+        function getExcelColumnName(colNum) {
+            let columnName = "";
+            while (colNum >= 0) {
+                columnName = String.fromCharCode((colNum % 26) + 65) + columnName;
+                colNum = Math.floor(colNum / 26) - 1;
+            }
+            return columnName;
+        }
+    </script>
+</body>
+</html>
