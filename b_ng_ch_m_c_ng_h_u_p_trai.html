@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hệ Thống Chấm Công & Quản Lý Lương - HẬU ĐẸP TRAI</title>
+    <!-- Tailwind CSS for premium responsive look and feel -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: {
+                            650: '#4f46e5',
+                            950: '#0b0a21',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for accounting & system icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for formulas & Multi-Sheet Excel output -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Premium Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom styled scrollbars for wide dynamic grids */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Elegant frozen column drop shadow styling */
+        .sticky-col-shadow::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: linear-gradient(to right, rgba(0,0,0,0.06), transparent);
+            pointer-events: none;
+        }
+        /* Mobile optimization tweaks */
+        @media (max-width: 768px) {
+            .mobile-hide { display: none !important; }
+            .mobile-full-width { width: 100% !important; max-width: 100% !important; }
+            .mobile-touch-target { min-height: 44px; min-width: 44px; }
+            .mobile-cell-size { width: 32px !important; height: 32px !important; min-width: 32px !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl py-3 px-4 sticky top-0 z-40 border-b border-indigo-500/20">
+        <div class="max-w-[98%] mx-auto flex flex-col gap-3">
+            <!-- Brand block -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-gradient-to-br from-amber-400 to-yellow-600 p-2 rounded-xl text-slate-950 shadow-md">
+                        <i class="fa-solid fa-crown text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg md:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+                            HẬU ĐẸP TRAI <span class="text-[9px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">SALES PLATFORM</span>
+                        </h1>
+                        <p class="text-[10px] text-indigo-200 font-light mt-0.5">Hệ thống chấm công, bàn mời KPI & quyết toán lương trên di động</p>
+                    </div>
+                </div>
+                
+                <!-- Quick Date Selector -->
+                <div class="bg-slate-800/80 border border-slate-700 rounded-lg px-2 py-1 flex items-center gap-2">
+                    <button onclick="adjustMonth(-1)" class="text-slate-400 hover:text-white px-1.5 py-0.5 transition-colors mobile-touch-target"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                    <span id="currentMonthYearLabel" class="text-xs font-bold text-white min-w-[75px] text-center">Tháng 07/2026</span>
+                    <button onclick="adjustMonth(1)" class="text-slate-400 hover:text-white px-1.5 py-0.5 transition-colors mobile-touch-target"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                </div>
+            </div>
+
+            <!-- Mobile-Friendly Tab Buttons -->
+            <div class="w-full">
+                <nav class="grid grid-cols-4 bg-slate-850 p-1 rounded-xl border border-slate-800 text-center text-xs">
+                    <button onclick="switchTab('timesheet')" id="tabBtnTimesheet" class="py-2.5 rounded-lg font-bold transition-all bg-indigo-650 text-white shadow-md flex flex-col sm:flex-row items-center justify-center gap-1">
+                        <i class="fa-solid fa-calendar-check text-amber-400 text-xs sm:text-sm"></i>
+                        <span class="text-[10px] sm:text-xs">Bảng Công</span>
+                    </button>
+                    <button onclick="switchTab('bookings')" id="tabBtnBookings" class="py-2.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-1">
+                        <i class="fa-solid fa-wine-glass text-rose-400 text-xs sm:text-sm"></i>
+                        <span class="text-[10px] sm:text-xs">Bàn & KPI</span>
+                    </button>
+                    <button onclick="switchTab('payroll')" id="tabBtnPayroll" class="py-2.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-1">
+                        <i class="fa-solid fa-money-bill-wave text-emerald-400 text-xs sm:text-sm"></i>
+                        <span class="text-[10px] sm:text-xs">Bảng Lương</span>
+                    </button>
+                    <button onclick="switchTab('personnel')" id="tabBtnPersonnel" class="py-2.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-1">
+                        <i class="fa-solid fa-users-gear text-sky-400 text-xs sm:text-sm"></i>
+                        <span class="text-[10px] sm:text-xs">Sửa Nhân Sự</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-[98%] mx-auto w-full py-4 px-2 sm:px-4">
+        <!-- Dashboard Live Metric Statistics -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] text-slate-450 uppercase font-bold tracking-wider">Số nhân sự</p>
+                    <h3 id="statTotalStaff" class="text-lg md:text-2xl font-black text-slate-800 mt-0.5">20</h3>
+                    <span class="text-[9px] text-indigo-600 font-medium"><i class="fa-solid fa-id-card-clip"></i> Sale / HNV</span>
+                </div>
+                <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600 mobile-hide">
+                    <i class="fa-solid fa-user-group text-lg"></i>
+                </div>
+            </div>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] text-slate-450 uppercase font-bold tracking-wider">Tổng công đi làm</p>
+                    <h3 id="statTotalWorkdays" class="text-lg md:text-2xl font-black text-emerald-600 mt-0.5 font-bold">0</h3>
+                    <span class="text-[9px] text-slate-400">Toàn hệ thống</span>
+                </div>
+                <div class="bg-emerald-50 p-2 rounded-lg text-emerald-600 mobile-hide">
+                    <i class="fa-solid fa-calendar-days text-lg"></i>
+                </div>
+            </div>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] text-slate-450 uppercase font-bold tracking-wider">Tổng bàn mời đặt</p>
+                    <h3 id="statTotalBookings" class="text-lg md:text-2xl font-black text-rose-600 mt-0.5">0 bàn</h3>
+                    <span id="statKpiProgress" class="text-[9px] text-rose-500 font-semibold">KPI: ≥ 12 bàn nhận 1tr</span>
+                </div>
+                <div class="bg-rose-50 p-2 rounded-lg text-rose-600 mobile-hide">
+                    <i class="fa-solid fa-wine-glass text-lg"></i>
+                </div>
+            </div>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] text-slate-450 uppercase font-bold tracking-wider">Quỹ lương thực trả</p>
+                    <h3 id="statTotalPayroll" class="text-lg md:text-xl font-black text-indigo-700 mt-0.5">0đ</h3>
+                    <span class="text-[9px] text-slate-400">Đã trừ phạt & cộng KPI</span>
+                </div>
+                <div class="bg-indigo-50 p-2 rounded-lg text-indigo-700 mobile-hide">
+                    <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation and Operations Controls -->
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 mb-4 flex flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-0.5"></i> Điền nhanh:
+                </span>
+                <button onclick="bulkFill('weekdays')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-emerald-200 transition-all flex items-center gap-1">
+                    T2 - T6
+                </button>
+                <button onclick="bulkFill('all')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-indigo-200 transition-all flex items-center gap-1">
+                    Full (X)
+                </button>
+                <button onclick="bulkFill('clear')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-rose-200 transition-all flex items-center gap-1">
+                    Xóa hết
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="toggleSettingsModal(true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold py-2 rounded-lg border border-slate-200 flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i> Cài Đặt KPI
+                </button>
+                <button onclick="addNewStaff()" class="bg-indigo-650 hover:bg-indigo-750 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <i class="fa-solid fa-user-plus text-amber-400"></i> Thêm Người
+                </button>
+                <button onclick="exportExcelMultiSheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-2 rounded-lg shadow-sm flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <i class="fa-solid fa-file-excel text-emerald-200"></i> Xuất Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: INTERACTIVE TIMESHEET -->
+        <div id="tabContentTimesheet" class="tab-pane block">
+            <div class="bg-indigo-50/70 p-2.5 rounded-xl text-[10px] text-indigo-950 mb-2 flex flex-col gap-1.5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-indigo-900"><i class="fa-solid fa-hand-pointer mr-0.5"></i> Chấm công chạm:</span>
+                    <span class="flex items-center gap-0.5"><span class="w-4 h-4 bg-emerald-500 text-white flex items-center justify-center text-[8px] font-black rounded">X</span> Đi làm</span>
+                    <span class="flex items-center gap-0.5"><span class="w-4 h-4 bg-amber-500 text-white flex items-center justify-center text-[8px] font-black rounded">½</span> Nửa buổi</span>
+                    <span class="flex items-center gap-0.5"><span class="w-4 h-4 bg-sky-500 text-white flex items-center justify-center text-[8px] font-black rounded">P</span> Phép</span>
+                    <span class="flex items-center gap-0.5"><span class="w-4 h-4 bg-rose-500 text-white flex items-center justify-center text-[8px] font-black rounded">V</span> Vắng</span>
+                </div>
+                <div class="text-slate-500 italic flex items-center gap-1 justify-between">
+                    <span><i class="fa-solid fa-left-right text-indigo-500"></i> Vuốt ngang bảng để xem tất cả 31 ngày</span>
+                    <span class="text-[9px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-extrabold"><i class="fa-solid fa-magnifying-glass"></i> Chạm kính lúp xem chi tiết cá nhân</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
+                <div class="custom-scrollbar overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse table-fixed min-w-[1400px]" id="attendanceTable">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200">
+                                <th class="w-10 text-center text-[10px] font-bold text-slate-600 py-2 px-1 sticky left-0 bg-slate-100 z-10">STT</th>
+                                <th class="w-40 text-left text-[10px] font-bold text-slate-600 py-2 px-2 sticky left-10 bg-slate-100 z-10 border-r border-slate-200 sticky-col-shadow">HỌ VÀ TÊN</th>
+                                <th class="w-24 text-left text-[10px] font-bold text-slate-600 py-2 px-2 border-r border-slate-200 bg-slate-50">BỘ PHẬN</th>
+                                <th class="w-20 text-center text-[10px] font-bold text-slate-600 py-2 px-1 border-r border-slate-200 bg-slate-50">CHI TIẾT</th>
+                                <th colspan="31" class="text-center text-[9px] font-bold text-slate-500 tracking-wider bg-slate-50 border-b border-slate-100 py-1">LỊCH CHẤM CÔNG TRONG THÁNG</th>
+                                <th class="w-20 text-center text-[10px] font-bold text-indigo-700 py-2 px-1 bg-indigo-50 border-l border-slate-200 sticky right-0 z-10">TỔNG CÔNG</th>
+                            </tr>
+                            <tr class="bg-slate-50 border-b border-slate-200" id="daysSubHeader">
+                                <!-- Populated by JS -->
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceBody" class="divide-y divide-slate-150 text-xs">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: BOOKINGS (BÀN MỜI) & KPI TRACKING -->
+        <div id="tabContentBookings" class="tab-pane hidden">
+            <div class="bg-rose-50 border border-rose-100 rounded-xl p-3 text-xs text-rose-950 mb-4">
+                <strong class="text-xs font-bold block mb-1">🎯 Chỉ tiêu KPI Bàn Mời Tháng <span class="booking-month-text">07</span></strong>
+                <p class="text-[11px] text-slate-600 leading-relaxed">Đạt từ <span class="font-bold text-rose-600">12 bàn mời</span> trở lên sẽ nhận thêm <span class="font-bold text-emerald-600">1.000.000đ</span> (tự động cộng thẳng vào thực nhận của nhân sự).</p>
+            </div>
+
+            <!-- Grid listing of all employees and their booking performance -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="bookingsEmployeeGrid">
+                <!-- Populated dynamically by JS -->
+            </div>
+        </div>
+
+        <!-- TAB 3: PAYROLL CALCULATOR PREVIEW -->
+        <div id="tabContentPayroll" class="tab-pane hidden">
+            <div class="bg-slate-100 p-2.5 rounded-xl text-[10px] text-slate-600 mb-3 leading-relaxed">
+                <strong>Công thức:</strong> Thực Nhận = (Lương cơ bản / Công chuẩn * Công thực tế) + Thưởng riêng + Thưởng KPI (1 triệu) - Phạt.
+                <br>• Vuốt màn hình ngang để xem đầy đủ cột Phạt, Note Phạt và Thực nhận.
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
+                <div class="custom-scrollbar overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse table-fixed min-w-[1250px]">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-600">
+                                <th class="w-10 text-center py-3 px-1 sticky left-0 bg-slate-100 z-10">STT</th>
+                                <th class="w-40 text-left py-3 px-2 sticky left-10 bg-slate-100 z-10 border-r border-slate-200 sticky-col-shadow">Họ Và Tên</th>
+                                <th class="w-16 text-center py-3 px-1">Chi tiết</th>
+                                <th class="w-24 text-center py-3 px-1">Kiểu Lương</th>
+                                <th class="w-28 text-right py-3 px-2">Mức Lương (đ)</th>
+                                <th class="w-16 text-center py-3 px-1">Công chuẩn</th>
+                                <th class="w-16 text-center py-3 px-1 bg-indigo-50/45">Công thực tế</th>
+                                <th class="w-28 text-right py-3 px-2">Lương Công (đ)</th>
+                                <th class="w-24 text-right py-3 px-2 text-indigo-600">Thưởng Riêng</th>
+                                <th class="w-16 text-center py-3 px-1">Bàn mời</th>
+                                <th class="w-28 text-right py-3 px-2 text-emerald-600">Thưởng KPI</th>
+                                <th class="w-24 text-right py-3 px-2 text-rose-700 bg-rose-50/30">Phạt (đ)</th>
+                                <th class="w-36 text-left py-3 px-2 text-slate-550">Lý do phạt</th>
+                                <th class="w-32 text-right py-3 px-3 font-black text-indigo-700 bg-indigo-50 sticky right-0 z-10 shadow-sm">THỰC NHẬN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payrollBody" class="divide-y divide-slate-100 text-xs">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: PERSONNEL & SALARY MANAGEMENT -->
+        <div id="tabContentPersonnel" class="tab-pane hidden">
+            <div class="bg-amber-50 border border-amber-100 p-2.5 rounded-xl text-[10px] text-amber-900 mb-3">
+                <i class="fa-solid fa-circle-info"></i> Sếp có thể thay đổi trực tiếp Họ tên, Bộ phận, Mức lương, Thưởng riêng, và Tiền Phạt + lý do phạt ngay bên dưới!
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden">
+                <div class="custom-scrollbar overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse table-fixed min-w-[1100px]">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-600">
+                                <th class="w-10 text-center py-3">STT</th>
+                                <th class="w-36 text-left py-3 px-1.5">Họ Và Tên</th>
+                                <th class="w-16 text-center py-3">Chi tiết</th>
+                                <th class="w-24 text-left py-3 px-1.5">Bộ Phận</th>
+                                <th class="w-32 text-left py-3 px-1.5">Hình Thức Lương</th>
+                                <th class="w-28 text-left py-3 px-1.5">Mức Lương (VNĐ)</th>
+                                <th class="w-28 text-left py-3 px-1.5 text-indigo-600">Thưởng Riêng (đ)</th>
+                                <th class="w-28 text-left py-3 px-1.5 text-rose-700">Phạt Trừ (đ)</th>
+                                <th class="w-36 text-left py-3 px-1.5">Lý Do Phạt (Note)</th>
+                                <th class="w-16 text-center py-3">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personnelBody" class="divide-y divide-slate-100 text-xs">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: ACCOUNTING CONFIGURATION SETTINGS -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden transform scale-95 transition-all duration-300" id="settingsModalContainer">
+            <div class="bg-gradient-to-r from-indigo-950 to-slate-900 text-white px-5 py-3.5 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-gears text-amber-400"></i>
+                    <h3 class="font-bold text-sm">Cấu Hình Chỉ Tiêu & KPI</h3>
+                </div>
+                <button onclick="toggleSettingsModal(false)" class="text-white hover:text-indigo-200 transition-colors">
+                    <i class="fa-solid fa-times text-md"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-655 mb-1 uppercase">Số ngày công chuẩn của tháng</label>
+                    <div class="relative">
+                        <input type="number" id="cfgStandardWorkdays" min="1" max="31" class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
+                        <span class="absolute right-3 top-2.5 text-[10px] text-slate-450 font-medium">ngày</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-655 mb-1 uppercase">Mục tiêu số bàn đạt KPI</label>
+                    <div class="relative">
+                        <input type="number" id="cfgMinKpiTables" min="1" max="50" class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
+                        <span class="absolute right-3 top-2.5 text-[10px] text-slate-455 font-medium">bàn</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-655 mb-1 uppercase">Tiền thưởng KPI khi đạt chỉ tiêu</label>
+                    <div class="relative">
+                        <input type="number" id="cfgKpiBonusAmount" step="100000" min="0" class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
+                        <span class="absolute right-3 top-2.5 text-[10px] text-slate-455 font-medium">đ</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-5 py-3 flex justify-end gap-2 border-t border-slate-100">
+                <button onclick="toggleSettingsModal(false)" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100">Huỷ</button>
+                <button onclick="saveAccountingSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DETAILED BOOKINGS LIST FOR EMPLOYEE -->
+    <div id="bookingDetailsModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-3 overflow-hidden transform scale-95 transition-all duration-300" id="bookingDetailsModalContainer">
+            <div class="bg-gradient-to-r from-rose-900 to-indigo-950 text-white px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-wine-glass text-rose-300 animate-pulse"></i>
+                    <div>
+                        <h3 class="font-bold text-xs" id="bookingModalStaffName">Chi tiết bàn mời</h3>
+                        <p class="text-[9px] text-indigo-200">KPI đặt bàn tháng <span class="booking-month-text">07</span></p>
+                    </div>
+                </div>
+                <button onclick="toggleBookingDetailsModal(false)" class="text-white hover:text-rose-200">
+                    <i class="fa-solid fa-times text-md"></i>
+                </button>
+            </div>
+            
+            <div class="p-4">
+                <!-- Add new table booking control -->
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3 space-y-2">
+                    <h4 class="text-[10px] font-bold text-slate-600 uppercase"><i class="fa-solid fa-plus-circle text-indigo-650 mr-0.5"></i> Thêm Bàn Đặt</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[8px] text-slate-500 font-bold mb-0.5">GHI CHÚ / TÊN BÀN</label>
+                            <input type="text" id="newBookTableName" placeholder="Vd: Bàn anh Hùng, VIP..." class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[8px] text-slate-500 font-bold mb-0.5">NGÀY ĐẶT</label>
+                            <input type="date" id="newBookDate" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[8px] text-slate-500 font-bold mb-0.5">SỐ KHÁCH</label>
+                            <div class="flex gap-1">
+                                <input type="number" id="newBookGuests" min="1" value="4" class="w-12 px-1 py-1.5 border border-slate-300 rounded text-xs text-center font-bold">
+                                <button onclick="addBookingEntry()" class="flex-grow bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded text-xs transition-colors flex items-center justify-center gap-1">
+                                    Thêm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bookings log list -->
+                <div class="max-h-[160px] overflow-y-auto custom-scrollbar border border-slate-100 rounded-lg">
+                    <table class="w-full text-left text-[11px]">
+                        <thead class="bg-slate-100 sticky top-0 font-bold text-slate-655 border-b border-slate-200">
+                            <tr>
+                                <th class="py-1.5 px-2">STT</th>
+                                <th class="py-1.5 px-1">Ghi Chú Bàn</th>
+                                <th class="py-1.5 px-1">Ngày</th>
+                                <th class="py-1.5 px-1 text-center">Khách</th>
+                                <th class="py-1.5 px-1 text-center">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalBookingsBody" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Booking Summary Target -->
+                <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] text-slate-500">Tổng cộng:</span>
+                        <span class="text-sm font-black text-rose-600" id="modalBookingSum">0 bàn</span>
+                    </div>
+                    <div class="text-[10px] font-bold" id="modalKpiStatusBadge">
+                        <!-- Met / Unmet status badge -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 px-4 py-3 flex justify-end gap-2 border-t border-slate-100">
+                <button onclick="toggleBookingDetailsModal(false)" class="bg-indigo-650 text-white px-4 py-1.5 rounded text-xs font-bold shadow-sm">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: INDIVIDUAL ATTENDANCE & PAYROLL DETAILS -->
+    <div id="individualDetailModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-3 overflow-hidden transform scale-95 transition-all duration-300 flex flex-col max-h-[90vh]" id="individualDetailModalContainer">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white px-4 py-3 flex flex-col gap-2 border-b border-indigo-950">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-lg text-amber-400"></i>
+                        <h3 class="font-extrabold text-xs">SAO KÊ CHI TIẾT CÁ NHÂN</h3>
+                    </div>
+                    <button onclick="toggleIndividualDetailModal(false)" class="text-white hover:text-indigo-200">
+                        <i class="fa-solid fa-times text-md"></i>
+                    </button>
+                </div>
+                <!-- Selector & Month Label -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                    <select id="indivStaffSelector" onchange="loadIndividualDetail(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-white rounded px-2 py-1.5 font-bold focus:outline-none w-full">
+                        <!-- Filled by JS -->
+                    </select>
+                    <div class="text-right flex items-center justify-end gap-1 text-[10px] text-indigo-200">
+                        <i class="fa-solid fa-calendar"></i> Bảng công Tháng <span id="indivMonthLabel" class="font-bold">07/2026</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content (Scrollable for mobile screens) -->
+            <div class="p-4 overflow-y-auto custom-scrollbar space-y-4 flex-grow">
+                <!-- Top Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-150 relative">
+                        <span id="indivDeptBadge" class="absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full">SALE</span>
+                        <h4 id="indivName" class="text-sm font-extrabold text-slate-850">Lê Văn Hậu</h4>
+                        <p class="text-[9px] text-slate-400 mt-0.5" id="indivId">Mã NV: EMP_001</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-150">
+                            <span class="text-[8px] text-slate-400 uppercase font-semibold">Chế Độ Lương</span>
+                            <h5 id="indivBaseRate" class="text-xs font-black text-slate-750 mt-0.5">0đ</h5>
+                            <span id="indivSalaryType" class="text-[8px] text-indigo-600 block">Lương tháng</span>
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-150">
+                            <span class="text-[8px] text-slate-400 uppercase font-semibold">Công thực tế</span>
+                            <h5 id="indivWorkdays" class="text-xs font-black text-indigo-600 mt-0.5">0 ngày</h5>
+                            <span id="indivWorkdaysBreakdown" class="text-[8px] text-slate-400 block truncate">X:0 | ½:0 | P:0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown Calculation Box -->
+                <div class="bg-white rounded-xl border border-slate-150 overflow-hidden text-xs">
+                    <div class="bg-slate-100 px-3 py-1.5 font-bold text-slate-655 text-[10px]">DIỄN GIẢI CHI TIẾT THU NHẬP</div>
+                    <div class="divide-y divide-slate-100 px-3">
+                        <div class="flex justify-between py-1.5">
+                            <span class="text-slate-500">Lương công thời gian:</span>
+                            <span class="font-semibold text-slate-800" id="indivWageEarned">0đ</span>
+                        </div>
+                        <div class="flex justify-between py-1.5">
+                            <span class="text-slate-500">Thưởng riêng bổ sung:</span>
+                            <span class="font-semibold text-indigo-600" id="indivBonus">0đ</span>
+                        </div>
+                        <div class="flex justify-between py-1.5">
+                            <span class="text-slate-500 flex items-center gap-1">Thưởng KPI bàn mời:</span>
+                            <span class="font-bold text-emerald-600" id="indivKpiBonus">0đ</span>
+                        </div>
+                        <div class="flex justify-between py-1.5">
+                            <span class="text-slate-500">Tổng số bàn đặt thành công:</span>
+                            <span class="font-bold text-rose-600" id="indivBookingCount">0 bàn</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 bg-rose-50/50 px-1 rounded my-1">
+                            <span class="text-rose-700 font-semibold">Khấu trừ tiền phạt:</span>
+                            <span class="font-bold text-rose-700" id="indivPenalty">0đ</span>
+                        </div>
+                        <div class="py-1 text-[9px] text-rose-600 italic" id="indivPenaltyNote">Lý do: Không có</div>
+                    </div>
+                </div>
+
+                <!-- Net Take-Home -->
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3.5 rounded-xl shadow-sm text-center">
+                    <p class="text-[9px] uppercase font-bold tracking-wider opacity-90">LƯƠNG THỰC NHẬN CUỐI CÙNG</p>
+                    <h4 id="indivNetSalary" class="text-lg font-black mt-0.5">0đ</h4>
+                </div>
+
+                <!-- 31 Days Visual Log Grid (Compact for mobile) -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-slate-550 mb-2"><i class="fa-solid fa-calendar-days text-indigo-600"></i> NHẬT KÝ CHẤM CÔNG 31 NGÀY</h4>
+                    <div class="grid grid-cols-4 gap-1.5" id="indivDaysGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer (Static bottom) -->
+            <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-t border-slate-100">
+                <div class="flex gap-1.5">
+                    <button onclick="navigateIndividual(-1)" class="px-2.5 py-1.5 rounded text-xs font-bold border border-slate-350 text-slate-700 hover:bg-slate-100">
+                        <i class="fa-solid fa-chevron-left"></i> Trước
+                    </button>
+                    <button onclick="navigateIndividual(1)" class="px-2.5 py-1.5 rounded text-xs font-bold border border-slate-355 text-slate-700 hover:bg-slate-100">
+                        Tiếp <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+                <button onclick="toggleIndividualDetailModal(false)" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded text-xs font-bold">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION DIALOG MODAL -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xs w-full mx-4 overflow-hidden transform scale-95 transition-all duration-300" id="confirmModalContainer">
+            <div class="p-4">
+                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-lg mb-3">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-850 uppercase mb-1">Xác nhận xóa?</h4>
+                <p id="confirmMessage" class="text-[11px] text-slate-500 leading-relaxed"></p>
+            </div>
+            <div class="bg-slate-50 px-4 py-2.5 flex justify-end gap-2 border-t border-slate-100">
+                <button id="confirmCancelBtn" class="px-3 py-1 rounded text-xs font-semibold text-slate-500 hover:bg-slate-100">Huỷ</button>
+                <button id="confirmOkBtn" class="bg-rose-650 hover:bg-rose-700 text-white px-4 py-1 rounded text-xs font-bold transition-all shadow-xs">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM ALERT DIALOG MODAL -->
+    <div id="alertModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xs w-full mx-4 overflow-hidden transform scale-95 transition-all duration-300" id="alertModalContainer">
+            <div class="p-4">
+                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center text-lg mb-3">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-850 uppercase mb-1">Cảnh báo hệ thống</h4>
+                <p id="alertMessage" class="text-[11px] text-slate-500 leading-relaxed"></p>
+            </div>
+            <div class="bg-slate-50 px-4 py-2.5 flex justify-end border-t border-slate-100">
+                <button onclick="closeAlertModal()" class="bg-indigo-650 hover:bg-indigo-700 text-white px-5 py-1 rounded text-xs font-bold shadow-xs">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification Box -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4.5 py-3 rounded-xl shadow-2xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+        <span id="toastIcon" class="text-amber-400 text-lg"><i class="fa-solid fa-check-circle"></i></span>
+        <p id="toastMessage" class="text-xs font-medium"></p>
+    </div>
+
+    <footer class="bg-slate-900 text-slate-400 py-3 text-center text-[9px] border-t border-slate-800 mt-auto">
+        <div class="max-w-[98%] mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-1.5">
+            <p>&copy; 2026 Quản trị hệ thống <strong>HẬU ĐẸP TRAI</strong>.</p>
+            <p class="flex items-center gap-1">
+                <span class="px-2 py-0.5 bg-indigo-950 text-indigo-300 rounded font-bold">XLSX Formulary Engine</span>
+                <span class="px-2 py-0.5 bg-rose-950 text-rose-350 rounded font-bold">KPI Target: 12 Tables</span>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // State variables
+        let employees = [];
+        let activeTab = "timesheet";
+        let activeBookingStaffIndex = null; // Track staff for detailed booking modal
+        let activeIndividualStaffIndex = null; // Track staff for individual payslip modal
+
+        // Core Configuration Parameters
+        let config = {
+            standardWorkdays: 26,     // Công mẫu để chia lương tháng
+            minKpiTables: 12,         // Số bàn tối thiểu để nhận KPI
+            kpiBonusAmount: 1000000   // Tiền thưởng khi đạt KPI bàn mời
+        };
+
+        const defaultDepartments = ["Sale", "HNV"];
+        let confirmCallback = null;
+
+        // Current Selected Date context
+        let currentYear = 2026;
+        let currentMonth = 6; // 0-indexed 6 is July 2026
+
+        // Attendance states setup
+        const STATES = {
+            '': { text: '', class: 'bg-white text-transparent hover:bg-slate-100', value: 0, label: 'Chưa chấm' },
+            'X': { text: 'X', class: 'bg-emerald-500 text-white font-bold shadow-sm', value: 1.0, label: 'Đi làm' },
+            '½': { text: '½', class: 'bg-amber-500 text-white font-bold shadow-sm', value: 0.5, label: 'Nửa ngày' },
+            'P': { text: 'P', class: 'bg-sky-500 text-white font-bold shadow-sm', value: 1.0, label: 'Phép năm' },
+            'V': { text: 'V', class: 'bg-rose-500 text-white font-bold shadow-sm', value: 0.0, label: 'Vắng mặt' }
+        };
+        const STATE_SEQUENCE = ['', 'X', '½', 'P', 'V'];
+
+        window.onload = function() {
+            setNewBookDateDefault();
+            updateMonthLabel();
+            generateInitialEmptyStaff();
+            renderCalendarHeader();
+            renderTableBody();
+            calculateStatistics();
+        }
+
+        // Generate 20 blank rows (No pre-entered real names of stranger)
+        function generateInitialEmptyStaff() {
+            employees = [];
+            for(let i = 0; i < 20; i++) {
+                employees.push({
+                    id: 'EMP_' + (i + 1).toString().padStart(3, '0'),
+                    stt: i + 1,
+                    name: `Nhân viên ${i + 1}`, // Clean editable template names
+                    department: defaultDepartments[i % 2], // Rotates between Sale and HNV
+                    attendance: Array(31).fill(''),
+                    salaryType: 'monthly', // 'monthly' (Lương tháng) or 'daily' (Lương ngày)
+                    salaryRate: 6500000,   // Base rate (for month or per day)
+                    bonus: 0,             // Thưởng riêng
+                    penalty: 0,           // Phạt trừ
+                    penaltyNote: "",      // Lý do phạt
+                    bookings: []          // Table booking list details
+                });
+            }
+        }
+
+        function setNewBookDateDefault() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('newBookDate').value = `${year}-${month}-${day}`;
+        }
+
+        function updateMonthLabel() {
+            const displayMonth = String(currentMonth + 1).padStart(2, '0');
+            const formatted = `Tháng ${displayMonth}/${currentYear}`;
+            document.getElementById('currentMonthYearLabel').textContent = formatted;
+            
+            // Sync all labels
+            document.querySelectorAll('.booking-month-text').forEach(el => {
+                el.textContent = displayMonth;
+            });
+        }
+
+        function adjustMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            updateMonthLabel();
+            updateCalendarDays();
+        }
+
+        // Recompute calendar arrays on month change
+        function updateCalendarDays() {
+            renderCalendarHeader();
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            employees.forEach(emp => {
+                if (emp.attendance.length !== daysInMonth) {
+                    const newAttendance = Array(daysInMonth).fill('');
+                    for(let d = 0; d < Math.min(emp.attendance.length, daysInMonth); d++) {
+                        newAttendance[d] = emp.attendance[d];
+                    }
+                    emp.attendance = newAttendance;
+                }
+            });
+            refreshActiveTab();
+            calculateStatistics();
+            showToast(`Đã chuyển sang Tháng ${currentMonth+1}/${currentYear}!`, 'fa-solid fa-calendar-check');
+        }
+
+        function getDaysInMonth(year, month) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        function getDayOfWeekStr(year, month, day) {
+            const dayOfWeek = new Date(year, month, day).getDay();
+            const daysMap = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            return {
+                name: daysMap[dayOfWeek],
+                isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+                dayIndex: dayOfWeek
+            };
+        }
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            
+            document.querySelectorAll('.tab-pane').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            
+            const selectedPane = document.getElementById('tabContent' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+            selectedPane.classList.remove('hidden');
+            selectedPane.classList.add('block');
+
+            const buttons = [
+                { name: 'timesheet', btn: document.getElementById('tabBtnTimesheet') },
+                { name: 'bookings', btn: document.getElementById('tabBtnBookings') },
+                { name: 'payroll', btn: document.getElementById('tabBtnPayroll') },
+                { name: 'personnel', btn: document.getElementById('tabBtnPersonnel') }
+            ];
+
+            buttons.forEach(item => {
+                if(item.name === tabName) {
+                    item.btn.className = "py-2.5 rounded-lg font-bold transition-all bg-indigo-650 text-white shadow-md flex flex-col sm:flex-row items-center justify-center gap-1";
+                } else {
+                    item.btn.className = "py-2.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-1";
+                }
+            });
+
+            refreshActiveTab();
+            calculateStatistics();
+        }
+
+        function refreshActiveTab() {
+            if (activeTab === 'timesheet') {
+                renderTableBody();
+            } else if (activeTab === 'bookings') {
+                renderBookingsSummaryGrid();
+            } else if (activeTab === 'payroll') {
+                renderPayrollTable();
+            } else if (activeTab === 'personnel') {
+                renderPersonnelTable();
+            }
+        }
+
+        function renderCalendarHeader() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            const subHeader = document.getElementById('daysSubHeader');
+            
+            subHeader.innerHTML = `
+                <th class="sticky left-0 bg-slate-50 z-10 border-r border-slate-100"></th>
+                <th class="sticky left-10 bg-slate-50 z-10 border-r border-slate-250 sticky-col-shadow"></th>
+                <th class="border-r border-slate-200 bg-slate-50"></th>
+                <th class="border-r border-slate-200 bg-slate-50"></th>
+            `;
+
+            for(let d = 1; d <= daysInMonth; d++) {
+                const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d);
+                const th = document.createElement('th');
+                
+                let bgClass = 'bg-white';
+                let textClass = 'text-slate-600';
+                if(dayInfo.isWeekend) {
+                    bgClass = dayInfo.name === 'CN' ? 'bg-rose-50/70' : 'bg-amber-50/50';
+                    textClass = dayInfo.name === 'CN' ? 'text-rose-600 font-bold' : 'text-amber-600 font-bold';
+                }
+
+                th.className = `w-10 border-r border-slate-200 text-center py-2 cursor-default ${bgClass}`;
+                th.innerHTML = `
+                    <div class="text-[9px] ${textClass}">${dayInfo.name}</div>
+                    <div class="text-[11px] font-bold text-slate-800 mt-0.5">${d.toString().padStart(2, '0')}</div>
+                `;
+                subHeader.appendChild(th);
+            }
+
+            const thTotal = document.createElement('th');
+            thTotal.className = "w-20 text-center text-[10px] font-bold text-indigo-900 bg-indigo-50 border-l border-slate-250 sticky right-0 z-10 py-2";
+            thTotal.innerHTML = "<div>Tổng</div>";
+            subHeader.appendChild(thTotal);
+        }
+
+        function renderTableBody() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            const tbody = document.getElementById('attendanceBody');
+            tbody.innerHTML = '';
+
+            employees.forEach((emp, empIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors duration-100";
+
+                // STT
+                const tdSTT = document.createElement('td');
+                tdSTT.className = "sticky left-0 bg-white hover:bg-slate-50 text-center py-2 text-xs text-slate-500 font-semibold border-r border-slate-100 z-10";
+                tdSTT.textContent = emp.stt;
+                tr.appendChild(tdSTT);
+
+                // Name Column
+                const tdName = document.createElement('td');
+                tdName.className = "sticky left-10 bg-white hover:bg-slate-50 font-semibold text-slate-800 border-r border-slate-200 z-10 sticky-col-shadow text-xs p-1";
+                tdName.innerHTML = `
+                    <input type="text" value="${emp.name}" onchange="updatePersonnelField(${empIdx}, 'name', this.value)" 
+                        class="w-full bg-transparent hover:bg-slate-100/85 focus:bg-white border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded px-2 py-1.5 font-bold text-slate-800 focus:outline-none transition-all text-xs">
+                `;
+                tr.appendChild(tdName);
+
+                // Department Column (Sale / HNV Only)
+                const tdDept = document.createElement('td');
+                tdDept.className = "p-1 border-r border-slate-200 text-xs text-slate-600 font-medium";
+                tdDept.innerHTML = `
+                    <select onchange="updatePersonnelField(${empIdx}, 'department', this.value)"
+                        class="w-full bg-transparent hover:bg-slate-100/85 focus:bg-white border border-transparent hover:border-slate-300 focus:border-indigo-500 rounded px-1.5 py-1 text-xs font-semibold focus:outline-none transition-all text-slate-700">
+                        ${defaultDepartments.map(dept => `<option value="${dept}" ${emp.department === dept ? 'selected' : ''}>${dept}</option>`).join('')}
+                    </select>
+                `;
+                tr.appendChild(tdDept);
+
+                // Individual Detail Button Cell
+                const tdViewDetail = document.createElement('td');
+                tdViewDetail.className = "p-1 border-r border-slate-200 text-center";
+                tdViewDetail.innerHTML = `
+                    <button onclick="openIndividualDetail(${empIdx})" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 hover:text-indigo-800 rounded font-bold text-[10px] transition-colors flex items-center gap-1 mx-auto shadow-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i> Xem
+                    </button>
+                `;
+                tr.appendChild(tdViewDetail);
+
+                // Render day Cells
+                let sumWorkdays = 0;
+                for(let d = 0; d < daysInMonth; d++) {
+                    const cellVal = emp.attendance[d] || '';
+                    const stateObj = STATES[cellVal] || STATES[''];
+                    sumWorkdays += stateObj.value;
+
+                    const tdCell = document.createElement('td');
+                    const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d + 1);
+                    
+                    let cellBg = "bg-white";
+                    if(dayInfo.isWeekend && !cellVal) {
+                        cellBg = dayInfo.name === 'CN' ? 'bg-rose-50/35' : 'bg-amber-50/20';
+                    }
+
+                    tdCell.className = `border-r border-slate-150 p-0 text-center align-middle cursor-pointer select-none transition-all ${cellBg}`;
+                    tdCell.onclick = () => toggleCellState(empIdx, d);
+
+                    const cellEl = document.createElement('div');
+                    cellEl.className = `mx-auto w-6 h-6 flex items-center justify-center text-[11px] rounded transition-all duration-100 ${stateObj.class}`;
+                    cellEl.textContent = stateObj.text || '-';
+                    
+                    tdCell.appendChild(cellEl);
+                    tr.appendChild(tdCell);
+                }
+
+                // Sum Actual Workdays Column (Sticky right side)
+                const tdTotal = document.createElement('td');
+                tdTotal.className = "sticky right-0 bg-indigo-50 text-center font-black text-indigo-950 border-l border-slate-200 text-xs py-2 z-10 shadow-sm";
+                tdTotal.id = `total_emp_${empIdx}`;
+                tdTotal.textContent = sumWorkdays % 1 === 0 ? sumWorkdays : sumWorkdays.toFixed(1);
+                tr.appendChild(tdTotal);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleCellState(empIdx, dayIdx) {
+            const currentVal = employees[empIdx].attendance[dayIdx] || '';
+            const currSeqIdx = STATE_SEQUENCE.indexOf(currentVal);
+            const nextSeqIdx = (currSeqIdx + 1) % STATE_SEQUENCE.length;
+            const nextVal = STATE_SEQUENCE[nextSeqIdx];
+            
+            employees[empIdx].attendance[dayIdx] = nextVal;
+            updateEmployeeRowTotal(empIdx);
+            calculateStatistics();
+        }
+
+        function updateEmployeeRowTotal(empIdx) {
+            const emp = employees[empIdx];
+            let sumWorkdays = 0;
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+            for(let d = 0; d < daysInMonth; d++) {
+                const cellVal = emp.attendance[d] || '';
+                sumWorkdays += STATES[cellVal].value;
+            }
+
+            const tdTotal = document.getElementById(`total_emp_${empIdx}`);
+            if (tdTotal) {
+                tdTotal.textContent = sumWorkdays % 1 === 0 ? sumWorkdays : sumWorkdays.toFixed(1);
+            }
+        }
+
+        function renderBookingsSummaryGrid() {
+            const grid = document.getElementById('bookingsEmployeeGrid');
+            grid.innerHTML = '';
+
+            employees.forEach((emp, empIdx) => {
+                const totalTables = emp.bookings.length;
+                const kpiProgressPercent = Math.min(100, (totalTables / config.minKpiTables) * 100);
+                const isKpiMet = totalTables >= config.minKpiTables;
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-2xl shadow-sm border p-4 transition-all duration-200 ${
+                    isKpiMet ? 'border-emerald-300 ring-2 ring-emerald-500/10 bg-emerald-50/5' : 'border-slate-100 hover:shadow-md'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                emp.department === 'Sale' ? 'bg-indigo-100 text-indigo-700' : 'bg-sky-100 text-sky-700'
+                            }">${emp.department}</span>
+                            <h4 class="font-extrabold text-sm text-slate-850 mt-1">${emp.name || 'N/A'}</h4>
+                        </div>
+                        <div class="text-right">
+                            ${isKpiMet 
+                                ? `<span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-0.5"><i class="fa-solid fa-trophy text-amber-500 animate-bounce"></i> Đạt KPI</span>`
+                                : `<span class="bg-slate-100 text-slate-500 text-[9px] font-semibold px-2 py-0.5 rounded">Thiếu ${config.minKpiTables - totalTables} bàn</span>`
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Progress Indicator -->
+                    <div class="mb-3">
+                        <div class="flex justify-between text-[10px] mb-1 font-medium">
+                            <span class="text-slate-500">Tiến độ:</span>
+                            <span class="font-bold text-slate-800">${totalTables}/${config.minKpiTables} bàn</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-300 ${
+                                isKpiMet ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-indigo-650'
+                            }" style="width: ${kpiProgressPercent}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-[10px] pt-2 border-t border-slate-100">
+                        <div class="text-slate-500">
+                            Thưởng KPI: <span class="font-bold ${isKpiMet ? 'text-emerald-600' : 'text-slate-400'}">${formatCurrency(isKpiMet ? config.kpiBonusAmount : 0)}đ</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="openBookingDetails(${empIdx})" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[9px] font-bold rounded transition-colors flex items-center gap-0.5">
+                                <i class="fa-solid fa-wine-glass-glass"></i> Sổ bàn
+                            </button>
+                            <button onclick="openIndividualDetail(${empIdx})" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded transition-colors flex items-center gap-0.5">
+                                <i class="fa-solid fa-id-card"></i> Thống kê
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function openBookingDetails(empIdx) {
+            activeBookingStaffIndex = empIdx;
+            const emp = employees[empIdx];
+            
+            document.getElementById('bookingModalStaffName').textContent = `Chi tiết bàn mời - ${emp.name}`;
+            renderModalBookingsTable();
+            toggleBookingDetailsModal(true);
+        }
+
+        function renderModalBookingsTable() {
+            const emp = employees[activeBookingStaffIndex];
+            const tbody = document.getElementById('modalBookingsBody');
+            tbody.innerHTML = '';
+
+            const bookings = emp.bookings || [];
+            
+            if (bookings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-slate-400 italic">Chưa ghi nhận đặt bàn nào trong tháng!</td>
+                    </tr>
+                `;
+            } else {
+                bookings.forEach((bk, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="py-1.5 px-2 font-semibold text-slate-500">${index + 1}</td>
+                        <td class="py-1.5 px-1 font-bold text-slate-800">${bk.tableName}</td>
+                        <td class="py-1.5 px-1">${formatIsoDateToVn(bk.date)}</td>
+                        <td class="py-1.5 px-1 text-center font-bold text-slate-700">${bk.guests} khách</td>
+                        <td class="py-1.5 px-1 text-center">
+                            <button onclick="removeBookingEntry(${index})" class="text-rose-500 hover:text-rose-700 p-1 transition-colors">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Update statistics footer
+            const totalTables = bookings.length;
+            document.getElementById('modalBookingSum').textContent = `${totalTables} bàn`;
+            
+            const badge = document.getElementById('modalKpiStatusBadge');
+            if (totalTables >= config.minKpiTables) {
+                badge.className = "flex items-center gap-1 font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100";
+                badge.innerHTML = `<i class="fa-solid fa-circle-check animate-pulse"></i> Đạt KPI (+${formatCurrency(config.kpiBonusAmount)}đ)`;
+            } else {
+                badge.className = "flex items-center gap-1 font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100";
+                badge.innerHTML = `<i class="fa-solid fa-clock"></i> Còn thiếu ${config.minKpiTables - totalTables} bàn`;
+            }
+        }
+
+        function addBookingEntry() {
+            if (activeBookingStaffIndex === null) return;
+            
+            const nameInput = document.getElementById('newBookTableName');
+            const dateInput = document.getElementById('newBookDate');
+            const guestsInput = document.getElementById('newBookGuests');
+
+            const tableName = nameInput.value.trim();
+            const dateVal = dateInput.value;
+            const guestsCount = parseInt(guestsInput.value) || 4;
+
+            if (!tableName) {
+                showCustomAlert("Vui lòng điền tên bàn hoặc ghi chú đặt bàn!");
+                return;
+            }
+            if (!dateVal) {
+                showCustomAlert("Vui lòng chọn ngày đặt bàn!");
+                return;
+            }
+
+            // Register booking
+            employees[activeBookingStaffIndex].bookings.push({
+                tableName: tableName,
+                date: dateVal,
+                guests: guestsCount
+            });
+
+            // Reset input
+            nameInput.value = '';
+            setNewBookDateDefault();
+            guestsInput.value = '4';
+
+            renderModalBookingsTable();
+            calculateStatistics();
+            showToast("Thêm lịch đặt bàn thành công!", "fa-solid fa-wine-glass");
+        }
+
+        function removeBookingEntry(index) {
+            if (activeBookingStaffIndex === null) return;
+            employees[activeBookingStaffIndex].bookings.splice(index, 1);
+            
+            renderModalBookingsTable();
+            calculateStatistics();
+            showToast("Đã xóa đặt bàn khỏi danh sách!", "fa-solid fa-eraser");
+        }
+
+        function toggleBookingDetailsModal(open) {
+            const modal = document.getElementById('bookingDetailsModal');
+            const container = document.getElementById('bookingDetailsModalContainer');
+            
+            if (open) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-100');
+                container.classList.add('scale-95');
+                activeBookingStaffIndex = null;
+                refreshActiveTab();
+            }
+        }
+
+        function renderPayrollTable() {
+            const tbody = document.getElementById('payrollBody');
+            tbody.innerHTML = '';
+
+            employees.forEach((emp, index) => {
+                let actualWorkdays = 0;
+                emp.attendance.forEach(val => {
+                    actualWorkdays += STATES[val]?.value || 0;
+                });
+
+                // Financial arithmetic equations
+                let wageEarned = 0;
+                if (emp.salaryType === 'monthly') {
+                    const baseDailySalary = emp.salaryRate / config.standardWorkdays;
+                    wageEarned = baseDailySalary * actualWorkdays;
+                } else {
+                    wageEarned = emp.salaryRate * actualWorkdays;
+                }
+
+                // KPI Thưởng if booking tables >= 12
+                const totalBookings = emp.bookings.length;
+                const isKpiMet = totalBookings >= config.minKpiTables;
+                const kpiBonusEarned = isKpiMet ? config.kpiBonusAmount : 0;
+
+                // Net Salary = Lương công + Thưởng Riêng + Thưởng KPI - Phạt
+                const netSalary = Math.max(0, wageEarned + emp.bonus + kpiBonusEarned - emp.penalty);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors duration-100";
+
+                tr.innerHTML = `
+                    <td class="text-center py-3 sticky left-0 bg-white hover:bg-slate-50 font-semibold border-r border-slate-100 z-10 text-slate-500">${emp.stt}</td>
+                    <td class="sticky left-10 bg-white hover:bg-slate-50 font-bold text-slate-800 border-r border-slate-200 px-2 z-10 sticky-col-shadow text-xs truncate">${emp.name}</td>
+                    <td class="text-center py-2 px-1">
+                        <button onclick="openIndividualDetail(${index})" class="p-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded" title="Xem chi tiết">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </td>
+                    <td class="text-center py-3">
+                        <span class="px-1.5 py-0.5 rounded font-bold text-[9px] ${
+                            emp.salaryType === 'monthly' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }">
+                            ${emp.salaryType === 'monthly' ? 'Lương tháng' : 'Lương ngày'}
+                        </span>
+                    </td>
+                    <td class="text-right py-3 px-2 font-semibold text-slate-700">${formatCurrency(emp.salaryRate)}</td>
+                    <td class="text-center py-3 text-slate-500 font-bold">${emp.salaryType === 'monthly' ? config.standardWorkdays : '-'}</td>
+                    <td class="text-center py-3 bg-indigo-50/30 text-indigo-900 font-extrabold">${actualWorkdays % 1 === 0 ? actualWorkdays : actualWorkdays.toFixed(1)}</td>
+                    <td class="text-right py-3 px-2 font-medium text-slate-700">${formatCurrency(wageEarned)}</td>
+                    <td class="text-right py-3 px-2 font-bold text-indigo-600">${formatCurrency(emp.bonus)}</td>
+                    <td class="text-center py-3 font-bold bg-rose-50/20 text-rose-700">${totalBookings}</td>
+                    <td class="text-right py-3 px-2 font-bold text-emerald-600 ${isKpiMet ? 'bg-emerald-50/30' : ''}">${formatCurrency(kpiBonusEarned)}</td>
+                    <td class="text-right py-3 px-2 text-rose-700 bg-rose-50/50 font-bold">${emp.penalty > 0 ? '-' + formatCurrency(emp.penalty) : '0'}</td>
+                    <td class="text-left py-3 px-2 text-slate-500 italic max-w-[120px] truncate" title="${emp.penaltyNote || ''}">${emp.penaltyNote || '-'}</td>
+                    <td class="text-right py-3 px-3 font-black text-indigo-700 bg-indigo-50 sticky right-0 z-10 shadow-sm">${formatCurrency(netSalary)}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPersonnelTable() {
+            const tbody = document.getElementById('personnelBody');
+            tbody.innerHTML = '';
+
+            employees.forEach((emp, empIdx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-all duration-100";
+
+                tr.innerHTML = `
+                    <td class="text-center py-3 text-slate-500 font-bold">${emp.stt}</td>
+                    <td class="py-2 px-1">
+                        <input type="text" value="${emp.name}" onchange="updatePersonnelField(${empIdx}, 'name', this.value)" 
+                            class="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded px-2 py-1.5 font-bold text-slate-800 text-xs focus:outline-none">
+                    </td>
+                    <td class="py-2 px-1 text-center">
+                        <button onclick="openIndividualDetail(${empIdx})" class="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded" title="Xem">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </td>
+                    <td class="py-2 px-1">
+                        <select onchange="updatePersonnelField(${empIdx}, 'department', this.value)"
+                            class="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded px-1.5 py-1.5 text-slate-750 font-semibold text-xs focus:outline-none">
+                            ${defaultDepartments.map(dept => `<option value="${dept}" ${emp.department === dept ? 'selected' : ''}>${dept}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td class="py-2 px-1">
+                        <select onchange="updatePersonnelField(${empIdx}, 'salaryType', this.value)"
+                            class="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded px-1 py-1.5 text-slate-750 font-bold text-xs focus:outline-none">
+                            <option value="monthly" ${emp.salaryType === 'monthly' ? 'selected' : ''}>Lương Tháng</option>
+                            <option value="daily" ${emp.salaryType === 'daily' ? 'selected' : ''}>Lương Ngày</option>
+                        </select>
+                    </td>
+                    <td class="py-2 px-1">
+                        <div class="relative">
+                            <input type="number" value="${emp.salaryRate}" step="100000" min="0" onchange="updatePersonnelField(${empIdx}, 'salaryRate', this.value)"
+                                class="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded pl-2 pr-4 py-1.5 font-bold text-slate-850 text-xs focus:outline-none">
+                            <span class="absolute right-1 top-2 text-[9px] font-bold text-slate-400">đ</span>
+                        </div>
+                    </td>
+                    <td class="py-2 px-1 bg-indigo-50/20">
+                        <div class="relative">
+                            <input type="number" value="${emp.bonus}" step="50000" min="0" onchange="updatePersonnelField(${empIdx}, 'bonus', this.value)"
+                                class="w-full bg-indigo-50/30 border border-indigo-200 focus:border-indigo-500 rounded pl-2 pr-4 py-1.5 font-bold text-indigo-700 text-xs focus:outline-none">
+                            <span class="absolute right-1 top-2 text-[9px] font-bold text-indigo-400">đ</span>
+                        </div>
+                    </td>
+                    <td class="py-2 px-1 bg-rose-50/20">
+                        <div class="relative">
+                            <input type="number" value="${emp.penalty}" step="10000" min="0" onchange="updatePersonnelField(${empIdx}, 'penalty', this.value)"
+                                class="w-full bg-rose-50/30 border border-rose-200 focus:border-rose-500 rounded pl-2 pr-4 py-1.5 font-extrabold text-rose-700 text-xs focus:outline-none" placeholder="0">
+                            <span class="absolute right-1 top-2 text-[9px] font-bold text-rose-400">đ</span>
+                        </div>
+                    </td>
+                    <td class="py-2 px-1">
+                        <input type="text" value="${emp.penaltyNote || ''}" onchange="updatePersonnelField(${empIdx}, 'penaltyNote', this.value)" 
+                            class="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded px-2 py-1.5 text-slate-800 text-xs focus:outline-none" placeholder="Lý do phạt">
+                    </td>
+                    <td class="py-2 text-center">
+                        <button onclick="requestDeleteStaff(${empIdx})" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded" title="Xóa">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updatePersonnelField(empIdx, field, val) {
+            if (field === 'name') {
+                if(val.trim() === '') return;
+                employees[empIdx].name = val.trim();
+            } else if (field === 'department') {
+                employees[empIdx].department = val;
+            } else if (field === 'salaryType') {
+                employees[empIdx].salaryType = val;
+            } else if (field === 'salaryRate') {
+                employees[empIdx].salaryRate = Math.max(0, parseFloat(val) || 0);
+            } else if (field === 'bonus') {
+                employees[empIdx].bonus = Math.max(0, parseFloat(val) || 0);
+            } else if (field === 'penalty') {
+                employees[empIdx].penalty = Math.max(0, parseFloat(val) || 0);
+            } else if (field === 'penaltyNote') {
+                employees[empIdx].penaltyNote = val.trim();
+            }
+
+            calculateStatistics();
+        }
+
+        function calculateStatistics() {
+            let totalTickedWorkdays = 0;
+            let totalPayrollBudget = 0;
+            let totalBookings = 0;
+
+            employees.forEach(emp => {
+                let actualWorkdays = 0;
+                emp.attendance.forEach(val => {
+                    const tickVal = STATES[val]?.value || 0;
+                    totalTickedWorkdays += tickVal;
+                    actualWorkdays += tickVal;
+                });
+
+                let wageEarned = 0;
+                if (emp.salaryType === 'monthly') {
+                    const baseDailySalary = emp.salaryRate / config.standardWorkdays;
+                    wageEarned = baseDailySalary * actualWorkdays;
+                } else {
+                    wageEarned = emp.salaryRate * actualWorkdays;
+                }
+
+                const totalB = emp.bookings.length;
+                totalBookings += totalB;
+
+                const isKpiMet = totalB >= config.minKpiTables;
+                const kpiBonusEarned = isKpiMet ? config.kpiBonusAmount : 0;
+
+                const netSalary = Math.max(0, wageEarned + emp.bonus + kpiBonusEarned - emp.penalty);
+                totalPayrollBudget += netSalary;
+            });
+
+            document.getElementById('statTotalStaff').textContent = employees.length;
+            document.getElementById('statTotalWorkdays').textContent = totalTickedWorkdays.toFixed(1).replace('.0', '');
+            document.getElementById('statTotalPayroll').textContent = formatCurrency(totalPayrollBudget) + 'đ';
+            document.getElementById('statTotalBookings').textContent = `${totalBookings} bàn`;
+        }
+
+        function toggleIndividualDetailModal(open) {
+            const modal = document.getElementById('individualDetailModal');
+            const container = document.getElementById('individualDetailModalContainer');
+            
+            if (open) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-100');
+                container.classList.add('scale-95');
+                activeIndividualStaffIndex = null;
+            }
+        }
+
+        function openIndividualDetail(empIdx) {
+            activeIndividualStaffIndex = empIdx;
+            
+            // Build dropdown select options dynamically
+            const selector = document.getElementById('indivStaffSelector');
+            selector.innerHTML = '';
+            employees.forEach((emp, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = `${emp.stt}. ${emp.name} (${emp.department})`;
+                if (index === empIdx) opt.selected = true;
+                selector.appendChild(opt);
+            });
+
+            loadIndividualDetail(empIdx);
+            toggleIndividualDetailModal(true);
+        }
+
+        function navigateIndividual(offset) {
+            if (activeIndividualStaffIndex === null) return;
+            let newIndex = activeIndividualStaffIndex + offset;
+            if (newIndex >= employees.length) newIndex = 0;
+            if (newIndex < 0) newIndex = employees.length - 1;
+            
+            document.getElementById('indivStaffSelector').value = newIndex;
+            loadIndividualDetail(newIndex);
+        }
+
+        function loadIndividualDetail(empIdx) {
+            empIdx = parseInt(empIdx);
+            activeIndividualStaffIndex = empIdx;
+            const emp = employees[empIdx];
+            if (!emp) return;
+
+            // Set static fields
+            document.getElementById('indivName').textContent = emp.name;
+            document.getElementById('indivId').textContent = `Mã: ${emp.id}`;
+            document.getElementById('indivDeptBadge').textContent = emp.department.toUpperCase();
+            document.getElementById('indivDeptBadge').className = emp.department === 'Sale' 
+                ? 'absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700'
+                : 'absolute top-3 right-3 text-[9px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700';
+
+            document.getElementById('indivSalaryType').textContent = emp.salaryType === 'monthly' ? 'Lương Tháng' : 'Lương Ngày';
+            document.getElementById('indivBaseRate').textContent = formatCurrency(emp.salaryRate) + 'đ';
+
+            // Calculations
+            let actualWorkdays = 0;
+            let countX = 0, countHalf = 0, countP = 0, countV = 0, countEmpty = 0;
+            emp.attendance.forEach(val => {
+                actualWorkdays += STATES[val]?.value || 0;
+                if (val === 'X') countX++;
+                else if (val === '½') countHalf++;
+                else if (val === 'P') countP++;
+                else if (val === 'V') countV++;
+                else countEmpty++;
+            });
+
+            document.getElementById('indivWorkdays').textContent = `${actualWorkdays % 1 === 0 ? actualWorkdays : actualWorkdays.toFixed(1)} ngày`;
+            document.getElementById('indivWorkdaysBreakdown').textContent = `X:${countX} | ½:${countHalf} | P:${countP} | V:${countV}`;
+
+            // Money Earned
+            let wageEarned = 0;
+            if (emp.salaryType === 'monthly') {
+                const baseDailySalary = emp.salaryRate / config.standardWorkdays;
+                wageEarned = baseDailySalary * actualWorkdays;
+            } else {
+                wageEarned = emp.salaryRate * actualWorkdays;
+            }
+
+            const totalBookings = emp.bookings.length;
+            const isKpiMet = totalBookings >= config.minKpiTables;
+            const kpiBonusEarned = isKpiMet ? config.kpiBonusAmount : 0;
+            const netSalary = Math.max(0, wageEarned + emp.bonus + kpiBonusEarned - emp.penalty);
+
+            document.getElementById('indivWageEarned').textContent = formatCurrency(wageEarned) + 'đ';
+            document.getElementById('indivBonus').textContent = formatCurrency(emp.bonus) + 'đ';
+            document.getElementById('indivBookingCount').textContent = `${totalBookings} bàn`;
+            document.getElementById('indivKpiBonus').textContent = formatCurrency(kpiBonusEarned) + 'đ';
+            document.getElementById('indivPenalty').textContent = '-' + formatCurrency(emp.penalty) + 'đ';
+            document.getElementById('indivPenaltyNote').textContent = `Ghi chú phạt: ${emp.penaltyNote || 'Không có'}`;
+            document.getElementById('indivNetSalary').textContent = formatCurrency(netSalary) + 'đ';
+
+            // Month labels
+            const displayMonth = String(currentMonth + 1).padStart(2, '0');
+            document.getElementById('indivMonthLabel').textContent = `${displayMonth}/${currentYear}`;
+
+            // Populate Daily Grid (Optimized with compact grids)
+            const daysGrid = document.getElementById('indivDaysGrid');
+            daysGrid.innerHTML = '';
+            
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d);
+                const attVal = emp.attendance[d - 1] || '';
+                const stateObj = STATES[attVal];
+
+                const dayCard = document.createElement('div');
+                
+                let borderClass = 'border-slate-100';
+                let cardBg = 'bg-slate-50';
+                let pillBg = 'bg-slate-200 text-slate-500';
+
+                if (attVal === 'X') {
+                    cardBg = 'bg-emerald-50/50';
+                    borderClass = 'border-emerald-200';
+                    pillBg = 'bg-emerald-500 text-white font-bold';
+                } else if (attVal === '½') {
+                    cardBg = 'bg-amber-50/50';
+                    borderClass = 'border-amber-200';
+                    pillBg = 'bg-amber-500 text-white font-bold';
+                } else if (attVal === 'P') {
+                    cardBg = 'bg-sky-50/50';
+                    borderClass = 'border-sky-200';
+                    pillBg = 'bg-sky-500 text-white font-bold';
+                } else if (attVal === 'V') {
+                    cardBg = 'bg-rose-50/50';
+                    borderClass = 'border-rose-200';
+                    pillBg = 'bg-rose-500 text-white font-bold';
+                } else if (dayInfo.isWeekend) {
+                    cardBg = dayInfo.name === 'CN' ? 'bg-rose-50/20' : 'bg-amber-50/10';
+                }
+
+                dayCard.className = `p-1 rounded border ${borderClass} ${cardBg} flex flex-col justify-between h-11 text-[9px]`;
+                dayCard.innerHTML = `
+                    <div class="flex justify-between items-center opacity-80">
+                        <span>N.${d}</span>
+                        <span class="${dayInfo.isWeekend ? 'text-rose-500 font-extrabold' : 'text-slate-500'}">${dayInfo.name}</span>
+                    </div>
+                    <div class="text-center font-black ${pillBg} rounded-[2px] leading-3 text-[8px]">
+                        ${stateObj.text || '-'}
+                    </div>
+                `;
+                daysGrid.appendChild(dayCard);
+            }
+        }
+
+        function bulkFill(type) {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            
+            employees.forEach(emp => {
+                for(let d = 0; d < daysInMonth; d++) {
+                    const dayInfo = getDayOfWeekStr(currentYear, currentMonth, d + 1);
+                    if (type === 'weekdays') {
+                        if (!dayInfo.isWeekend) {
+                            emp.attendance[d] = 'X';
+                        } else {
+                            emp.attendance[d] = '';
+                        }
+                    } else if (type === 'all') {
+                        emp.attendance[d] = 'X';
+                    } else if (type === 'clear') {
+                        emp.attendance[d] = '';
+                    }
+                }
+            });
+
+            refreshActiveTab();
+            calculateStatistics();
+
+            if(type === 'weekdays') {
+                showToast("Đã tự động chấm công T2 đến T6 ngày thường!", "fa-solid fa-magic-wand-sparkles");
+            } else if(type === 'all') {
+                showToast("Đã chấm công đi làm (X) đầy đủ cho cả tháng!", "fa-solid fa-check-double");
+            } else if(type === 'clear') {
+                showToast("Đã xóa sạch dữ liệu bảng công của tháng!", "fa-solid fa-eraser");
+            }
+        }
+
+        function addNewStaff() {
+            const currentDays = getDaysInMonth(currentYear, currentMonth);
+            const newStt = employees.length + 1;
+            employees.push({
+                id: 'EMP_' + newStt.toString().padStart(3, '0'),
+                stt: newStt,
+                name: `Nhân viên mới ${newStt}`,
+                department: defaultDepartments[0],
+                attendance: Array(currentDays).fill(''),
+                salaryType: 'monthly',
+                salaryRate: 6500000,
+                bonus: 0,
+                penalty: 0,
+                penaltyNote: "",
+                bookings: []
+            });
+
+            refreshActiveTab();
+            calculateStatistics();
+            showToast("Thêm nhân sự trống mới thành công!", "fa-solid fa-user-plus");
+        }
+
+        function requestDeleteStaff(empIdx) {
+            const targetName = employees[empIdx].name;
+            showConfirmModal(
+                `Bạn muốn xóa nhân viên "${targetName}" ra khỏi hệ thống HẬU ĐẸP TRAI?`, 
+                function() {
+                    employees.splice(empIdx, 1);
+                    employees.forEach((emp, i) => emp.stt = i + 1);
+                    
+                    refreshActiveTab();
+                    calculateStatistics();
+                    showToast("Đã xóa nhân sự thành công!", "fa-solid fa-user-minus");
+                }
+            );
+        }
+
+        function toggleSettingsModal(open) {
+            const modal = document.getElementById('settingsModal');
+            const container = document.getElementById('settingsModalContainer');
+            
+            if (open) {
+                document.getElementById('cfgStandardWorkdays').value = config.standardWorkdays;
+                document.getElementById('cfgMinKpiTables').value = config.minKpiTables;
+                document.getElementById('cfgKpiBonusAmount').value = config.kpiBonusAmount;
+
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                container.classList.remove('scale-100');
+                container.classList.add('scale-95');
+            }
+        }
+
+        function saveAccountingSettings() {
+            const stdDays = parseInt(document.getElementById('cfgStandardWorkdays').value);
+            const minKpi = parseInt(document.getElementById('cfgMinKpiTables').value);
+            const kpiBonus = parseFloat(document.getElementById('cfgKpiBonusAmount').value);
+
+            if (!stdDays || stdDays < 1 || stdDays > 31) {
+                showCustomAlert("Vui lòng nhập ngày công chuẩn hợp lệ!");
+                return;
+            }
+            if (!minKpi || minKpi < 1) {
+                showCustomAlert("Vui lòng nhập chỉ tiêu bàn mời hợp lệ!");
+                return;
+            }
+
+            config.standardWorkdays = stdDays;
+            config.minKpiTables = minKpi;
+            config.kpiBonusAmount = isNaN(kpiBonus) ? 1000000 : kpiBonus;
+
+            toggleSettingsModal(false);
+            refreshActiveTab();
+            calculateStatistics();
+            showToast("Đã lưu thiết lập cấu hình mới thành công!", "fa-solid fa-floppy-disk");
+        }
+
+        function getExcelColumnName(colNum) {
+            let columnName = "";
+            while (colNum >= 0) {
+                columnName = String.fromCharCode((colNum % 26) + 65) + columnName;
+                colNum = Math.floor(colNum / 26) - 1;
+            }
+            return columnName;
+        }
+
+        function exportExcelMultiSheet() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            
+            // SHEET 1: Cham_Cong (BẢNG CHẤM CÔNG)
+            const sheet1Data = [];
+            sheet1Data.push([`HẬU ĐẸP TRAI - BẢNG CHẤM CÔNG THÁNG ${currentMonth + 1} NĂM ${currentYear}`]);
+            sheet1Data.push(["Lịch chấm công và tổng hợp số ngày đi làm thực tế"]);
+            sheet1Data.push([]); 
+
+            const sheet1Headers = ["STT", "HỌ VÀ TÊN", "BỘ PHẬN"];
+            for (let d = 1; d <= daysInMonth; d++) {
+                sheet1Headers.push(`Ngày ${d}`);
+            }
+            sheet1Headers.push("TỔNG CÔNG");
+            sheet1Data.push(sheet1Headers);
+
+            employees.forEach((emp, index) => {
+                const row = [emp.stt, emp.name, emp.department];
+                for (let d = 0; d < daysInMonth; d++) {
+                    row.push(emp.attendance[d] || '');
+                }
+
+                const startColLetter = 'D';
+                const endColLetter = getExcelColumnName(3 + daysInMonth - 1);
+                const excelRowNum = index + 5; 
+                
+                // Formula to calculate workdays in Excel
+                const formulaStr = `=COUNTIF(${startColLetter}${excelRowNum}:${endColLetter}${excelRowNum}, "X") + COUNTIF(${startColLetter}${excelRowNum}:${endColLetter}${excelRowNum}, "P") + (COUNTIF(${startColLetter}${excelRowNum}:${endColLetter}${excelRowNum}, "½") * 0.5)`;
+                
+                row.push({ t: 'n', f: formulaStr });
+                sheet1Data.push(row);
+            });
+
+            const wsTimesheet = XLSX.utils.aoa_to_sheet(sheet1Data);
+            const s1ColWidths = [{ wch: 6 }, { wch: 25 }, { wch: 15 }];
+            for (let d = 0; d < daysInMonth; d++) s1ColWidths.push({ wch: 6 });
+            s1ColWidths.push({ wch: 15 });
+            wsTimesheet['!cols'] = s1ColWidths;
+
+            // Merges title
+            wsTimesheet['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth + 3 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: daysInMonth + 3 } }
+            ];
+
+            // SHEET 2: Bang_Luong (BẢNG QUYẾT TOÁN LƯƠNG & KPI)
+            const sheet2Data = [];
+            sheet2Data.push([`HẬU ĐẸP TRAI - BẢNG QUYẾT TOÁN LƯƠNG THÁNG ${currentMonth + 1} NĂM ${currentYear}`]);
+            sheet2Data.push([`Đồng bộ công thức tự động dựa trên ngày công và số bàn đặt KPI`]);
+            sheet2Data.push([]);
+
+            const sheet2Headers = [
+                "STT", 
+                "HỌ VÀ TÊN", 
+                "BỘ PHẬN", 
+                "HÌNH THỨC LƯƠNG",
+                "MỨC LƯƠNG (đ)", 
+                "CÔNG CHUẨN", 
+                "CÔNG THỰC TẾ", 
+                "LƯƠNG CÔNG (đ)", 
+                "THƯỞNG RIÊNG (đ)", 
+                "SỐ BÀN MỜI", 
+                "THƯỞNG KPI (đ)", 
+                "PHẠT TRỪ (đ)", 
+                "LÝ DO PHẠT", 
+                "THỰC NHẬN (đ)"
+            ];
+            sheet2Data.push(sheet2Headers);
+
+            employees.forEach((emp, index) => {
+                const excelRowNumTimesheet = index + 5; 
+                const s2Row = index + 5; // offset
+
+                const totalWorkdayColLetter = getExcelColumnName(3 + daysInMonth); 
+                const totalWorkdaysCellRef = `Cham_Cong!${totalWorkdayColLetter}${excelRowNumTimesheet}`;
+
+                const s2DataRow = [
+                    emp.stt,
+                    emp.name,
+                    emp.department,
+                    emp.salaryType === 'monthly' ? 'Lương tháng' : 'Lương ngày',
+                    emp.salaryRate, // Col E
+                    emp.salaryType === 'monthly' ? config.standardWorkdays : "-", // Col F
+                    { t: 'n', f: totalWorkdaysCellRef }, // Col G (Công thực tế)
+                    
+                    // Col H (Lương Công): If "Lương tháng" -> E*G/F, Else -> E*G
+                    { t: 'n', f: `=IF(D${s2Row}="Lương tháng", E${s2Row}*G${s2Row}/F${s2Row}, E${s2Row}*G${s2Row})` },
+                    
+                    emp.bonus, // Col I (Thưởng riêng)
+                    emp.bookings.length, // Col J (Số bàn mời)
+                    
+                    // Col K (Thưởng KPI): If J >= 12 -> 1,000,000đ, Else -> 0đ
+                    { t: 'n', f: `=IF(J${s2Row}>=${config.minKpiTables}, ${config.kpiBonusAmount}, 0)` },
+                    
+                    emp.penalty, // Col L (Phạt)
+                    emp.penaltyNote || "", // Col M (Ghi chú phạt)
+                    
+                    // Col N (Thực nhận) = Lương công + Thưởng Riêng + Thưởng KPI - Phạt => =H+I+K-L
+                    { t: 'n', f: `=MAX(0, H${s2Row}+I${s2Row}+K${s2Row}-L${s2Row})` }
+                ];
+
+                sheet2Data.push(s2DataRow);
+            });
+
+            // Sum bottom row
+            const totalRowIndex = employees.length + 5;
+            const totalRow = [
+                "TỔNG CỘNG", "", "", "",
+                { t: 'n', f: `=SUM(E5:E${totalRowIndex-1})` },
+                "",
+                "",
+                { t: 'n', f: `=SUM(H5:H${totalRowIndex-1})` },
+                { t: 'n', f: `=SUM(I5:I${totalRowIndex-1})` },
+                { t: 'n', f: `=SUM(J5:J${totalRowIndex-1})` },
+                { t: 'n', f: `=SUM(K5:K${totalRowIndex-1})` },
+                { t: 'n', f: `=SUM(L5:L${totalRowIndex-1})` },
+                "",
+                { t: 'n', f: `=SUM(N5:N${totalRowIndex-1})` }
+            ];
+            sheet2Data.push([]);
+            sheet2Data.push(totalRow);
+
+            const wsPayroll = XLSX.utils.aoa_to_sheet(sheet2Data);
+            const s2ColWidths = [
+                { wch: 6 },  // STT
+                { wch: 25 }, // Họ tên
+                { wch: 12 }, // Bộ phận
+                { wch: 18 }, // Hình thức
+                { wch: 18 }, // Mức lương
+                { wch: 12 }, // Công chuẩn
+                { wch: 15 }, // Công thực tế
+                { wch: 18 }, // Lương công
+                { wch: 18 }, // Thưởng riêng
+                { wch: 12 }, // Số bàn mời
+                { wch: 18 }, // Thưởng KPI
+                { wch: 18 }, // Phạt trừ
+                { wch: 25 }, // Lý do phạt
+                { wch: 20 }  // Thực nhận
+            ];
+            wsPayroll['!cols'] = s2ColWidths;
+            wsPayroll['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 13 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 13 } },
+                { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 3 } } 
+            ];
+
+            // Build workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsTimesheet, "Cham_Cong");
+            XLSX.utils.book_append_sheet(wb, wsPayroll, "Bang_Luong");
+
+            const fileName = `Bang_Luong_KPI_Hau_Dep_Trai_${currentMonth + 1}_Nam_${currentYear}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            showToast("Báo cáo Excel Hậu Đẹp Trai đã được xuất thành công!", "fa-solid fa-file-shield");
+        }
+
+        function formatCurrency(val) {
+            return Math.round(val).toLocaleString('vi-VN');
+        }
+
+        function formatIsoDateToVn(isoStr) {
+            if (!isoStr) return '';
+            const parts = isoStr.split('-');
+            if (parts.length !== 3) return isoStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function showConfirmModal(message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            const container = document.getElementById('confirmModalContainer');
+            document.getElementById('confirmMessage').textContent = message;
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+
+            confirmCallback = onConfirm;
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            const container = document.getElementById('confirmModalContainer');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
+        document.getElementById('confirmOkBtn').addEventListener('click', function() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirmModal();
+        });
+
+        function showCustomAlert(message) {
+            const modal = document.getElementById('alertModal');
+            const container = document.getElementById('alertModalContainer');
+            document.getElementById('alertMessage').textContent = message;
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+        }
+
+        function closeAlertModal() {
+            const modal = document.getElementById('alertModal');
+            const container = document.getElementById('alertModalContainer');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+        }
+
+        function showToast(message, iconClass = 'fa-solid fa-check') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            toastIcon.innerHTML = `<i class="${iconClass}"></i>`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
